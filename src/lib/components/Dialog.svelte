@@ -23,6 +23,15 @@
     }
   });
 
+  $effect(() => {
+    if (open && dialogEl?.open) {
+      const firstInput = dialogEl.querySelector('input, select, textarea');
+      if (firstInput instanceof HTMLElement) {
+        firstInput.focus();
+      }
+    }
+  });
+
   function handleCancel(e: Event) {
     e.preventDefault();
     open = false;
