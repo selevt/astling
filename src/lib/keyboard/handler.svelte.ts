@@ -7,6 +7,8 @@ export interface KeyboardNavActions {
 	toggleStarSelected: (branch: BranchWithMetadata) => void;
 	deleteSelected: (branch: BranchWithMetadata) => void;
 	refresh: () => void;
+	createBranch: () => void;
+	editDescription: (branch: BranchWithMetadata) => void;
 }
 
 export function createKeyboardNav(
@@ -181,6 +183,16 @@ export function createKeyboardNav(
 				e.preventDefault();
 				actions.refresh();
 				break;
+			case 'c':
+				e.preventDefault();
+				actions.createBranch();
+				break;
+			case 'e': {
+				e.preventDefault();
+				const b = getSelectedBranch();
+				if (b) actions.editDescription(b);
+				break;
+			}
 			case 'Escape':
 				e.preventDefault();
 				// Cascading dismiss

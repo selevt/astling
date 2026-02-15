@@ -11,7 +11,8 @@ import Dialog from './Dialog.svelte';
 		onFilterChange,
 		onSearchChange,
 		onSortChange,
-		onCreateBranch
+		onCreateBranch,
+		showCreateForm = $bindable(false)
 	}: {
 		currentFilter: string;
 		searchTerm: string;
@@ -20,9 +21,9 @@ import Dialog from './Dialog.svelte';
 		onSearchChange: (term: string) => void;
 		onSortChange: (sort: string) => void;
 		onCreateBranch?: (name: string) => void;
+		showCreateForm?: boolean;
 	} = $props();
 	
-	let showCreateForm = $state(false);
 	let newBranchName = $state('');
 	let newBranchStart = $state('HEAD');
 	let isCreating = $state(false);

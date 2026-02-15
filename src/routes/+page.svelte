@@ -14,6 +14,8 @@
   let sortBy = $state('recent');
   let isLoading = $state(false);
   let error = $state<string | null>(null);
+  let showCreateForm = $state(false);
+  let editingBranchName = $state<string | null>(null);
 
   // Remote-derived sources (async-derived)
   let all = $derived(await getBranches());
@@ -133,6 +135,8 @@
       toggleStarSelected: (b) => handleToggleStar(b.name),
       deleteSelected: (b) => { if (!b.current) handleDelete(b.name); },
       refresh: reload,
+      createBranch: () => { showCreateForm = true; },
+      editDescription: (b) => { editingBranchName = b.name; },
     }
   );
 </script>
@@ -211,6 +215,7 @@
 			onFilterChange={handleFilterChange}
 			onSearchChange={handleSearchChange}
 			onSortChange={handleSortChange}
+			bind:showCreateForm
 		/>
 
 		{#if error}
@@ -264,6 +269,8 @@
                           onCheckout={handleCheckout}
                           onToggleStar={handleToggleStar}
                           onDelete={(name) => handleDelete(name)}
+                          showDescriptionForm={editingBranchName === branch.name}
+                          onEditComplete={() => editingBranchName = null}
                         />
                     {/each}
                 </div>

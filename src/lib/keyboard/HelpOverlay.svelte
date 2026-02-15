@@ -23,6 +23,8 @@
         <dt><kbd>o</kbd></dt><dd>Checkout branch</dd>
         <dt><kbd>Space</kbd></dt><dd>Toggle star</dd>
         <dt><kbd>d</kbd></dt><dd>Delete branch</dd>
+        <dt><kbd>e</kbd></dt><dd>Edit description</dd>
+        <dt><kbd>c</kbd></dt><dd>Create branch</dd>
         <dt><kbd>r</kbd></dt><dd>Refresh</dd>
       </dl>
     </div>

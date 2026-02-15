@@ -9,15 +9,18 @@
 		onCheckout,
 		onToggleStar,
 		onDelete,
+		onEditComplete,
+		showDescriptionForm = false
 	}: {
 		branch: BranchWithMetadata;
 		selected?: boolean;
 		onCheckout?: (name: string) => void;
 		onToggleStar?: (name: string) => void;
 		onDelete?: (name: string) => void;
+		onEditComplete?: () => void;
+		showDescriptionForm?: boolean;
 	} = $props();
 	let showDescription = $state(false);
-	let showDescriptionForm = $state(false);
 	let isLoading = $state(false);
 	
 	async function handleCheckout() {
@@ -118,10 +121,12 @@
 	function handleSaveDescription() {
 		showDescriptionForm = false;
 		showDescription = true;
+		onEditComplete?.();
 	}
 	
 	function handleCancelDescription() {
 		showDescriptionForm = false;
+		onEditComplete?.();
 	}
 </script>
 
