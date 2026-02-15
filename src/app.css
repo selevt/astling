@@ -96,6 +96,7 @@ body {
 button,
 input,
 select,
-textarea {
+textarea,
+dialog {
 	color: inherit;
 }

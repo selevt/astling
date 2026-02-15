@@ -1,6 +1,7 @@
 <script lang="ts">
 import { createBranch, getRepoPath, setRepoPath } from '../../routes/branches/data.remote';
 import { onMount } from 'svelte';
+import Dialog from './Dialog.svelte';
 	
 	// Props
 	let { 
@@ -179,56 +180,52 @@ import { onMount } from 'svelte';
 </div>
 
 {#if showCreateForm}
-	<div class="create-branch-modal">
-		<div class="modal-content">
-			<h3>Create New Branch</h3>
+	<Dialog bind:open={showCreateForm} title="Create New Branch">
 		<form onsubmit={(e) => { e.preventDefault(); handleCreateBranch(); }}>
-				<div class="form-group">
-					<label for="branch-name">Branch Name:</label>
-					<input
-						id="branch-name"
-						type="text"
-						bind:value={newBranchName}
-						placeholder="feature/new-feature"
-						required
-						class="form-input"
-
-					/>
-				</div>
-				
-				<div class="form-group">
-					<label for="start-point">Start From:</label>
-					<select
-						id="start-point"
-						bind:value={newBranchStart}
-						class="form-select"
-					>
-						<option value="HEAD">HEAD (current commit)</option>
-						<option value="main">main</option>
-						<option value="master">master</option>
-						<option value="develop">develop</option>
-					</select>
-				</div>
-				
-				<div class="form-actions">
-					<button
-						type="button"
-						onclick={() => showCreateForm = false}
-						class="btn-cancel"
-					>
-						Cancel
-					</button>
-					<button
-						type="submit"
-						disabled={!newBranchName.trim() || isCreating}
-						class="btn-create"
-					>
-						{isCreating ? 'Creating...' : 'Create Branch'}
-					</button>
-				</div>
-			</form>
-		</div>
-	</div>
+			<div class="dialog-form-group">
+				<label for="branch-name">Branch Name:</label>
+				<input
+					id="branch-name"
+					type="text"
+					bind:value={newBranchName}
+					placeholder="feature/new-feature"
+					required
+					class="dialog-input"
+				/>
+			</div>
+			
+			<div class="dialog-form-group">
+				<label for="start-point">Start From:</label>
+				<select
+					id="start-point"
+					bind:value={newBranchStart}
+					class="dialog-select"
+				>
+					<option value="HEAD">HEAD (current commit)</option>
+					<option value="main">main</option>
+					<option value="master">master</option>
+					<option value="develop">develop</option>
+				</select>
+			</div>
+			
+			<div class="dialog-actions">
+				<button
+					type="button"
+					onclick={() => showCreateForm = false}
+					class="dialog-btn dialog-btn-cancel"
+				>
+					Cancel
+				</button>
+				<button
+					type="submit"
+					disabled={!newBranchName.trim() || isCreating}
+					class="dialog-btn dialog-btn-primary"
+				>
+					{isCreating ? 'Creating...' : 'Create Branch'}
+				</button>
+			</div>
+		</form>
+	</Dialog>
 {/if}
 
 <style>
@@ -363,105 +360,6 @@ import { onMount } from 'svelte';
 	.create-branch-btn:hover {
 		background: var(--color-accent-green-hover);
 		border-color: var(--color-accent-green-hover);
-	}
-
-	.create-branch-modal {
-		position: fixed;
-		top: 0;
-		left: 0;
-		right: 0;
-		bottom: 0;
-		background: var(--color-overlay);
-		display: flex;
-		align-items: center;
-		justify-content: center;
-		z-index: 1000;
-	}
-
-	.modal-content {
-		background: var(--color-bg-surface);
-		padding: 24px;
-		border-radius: 8px;
-		box-shadow: 0 10px 25px var(--color-shadow-modal);
-		min-width: 400px;
-		max-width: 90vw;
-	}
-
-	.modal-content h3 {
-		margin: 0 0 20px 0;
-		color: var(--color-text-primary);
-		font-size: 18px;
-		font-weight: 600;
-	}
-
-	.form-group {
-		margin-bottom: 16px;
-	}
-
-	.form-group label {
-		display: block;
-		margin-bottom: 6px;
-		font-size: 14px;
-		font-weight: 500;
-		color: var(--color-text-primary);
-	}
-
-	.form-input, .form-select {
-		width: 100%;
-		padding: 8px 12px;
-		border: 1px solid var(--color-border-input);
-		border-radius: 6px;
-		font-size: 14px;
-		background: var(--color-bg-surface);
-		color: var(--color-text-primary);
-	}
-
-	.form-input:focus, .form-select:focus {
-		outline: none;
-		border-color: var(--color-accent-blue);
-		box-shadow: 0 0 0 3px var(--color-focus-ring);
-	}
-
-	.form-actions {
-		display: flex;
-		gap: 12px;
-		justify-content: flex-end;
-		margin-top: 20px;
-	}
-
-	.btn-cancel, .btn-create {
-		padding: 8px 16px;
-		border-radius: 6px;
-		font-size: 14px;
-		font-weight: 500;
-		cursor: pointer;
-		transition: all 0.2s ease;
-	}
-
-	.btn-cancel {
-		background: var(--color-bg-surface);
-		color: var(--color-text-primary);
-		border: 1px solid var(--color-border-input);
-	}
-
-	.btn-cancel:hover {
-		background: var(--color-bg-hover);
-	}
-
-	.btn-create {
-		background: var(--color-accent-green);
-		color: white;
-		border: 1px solid var(--color-accent-green);
-	}
-
-	.btn-create:hover:not(:disabled) {
-		background: var(--color-accent-green-hover);
-		border-color: var(--color-accent-green-hover);
-	}
-
-	.btn-create:disabled {
-		opacity: 0.6;
-		cursor: not-allowed;
 	}
 
 	.repo-path-row {
