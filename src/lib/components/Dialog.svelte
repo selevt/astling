@@ -35,6 +35,11 @@
       onClose?.();
     }
   }
+
+  function handleCloseButton() {
+    open = false;
+    onClose?.();
+  }
 </script>
 
 <dialog
@@ -47,7 +52,7 @@
     {#if title}
       <header class="dialog-header">
         <h3>{title}</h3>
-        <button type="button" class="dialog-close" onclick={handleClose}>✕</button>
+        <button type="button" class="dialog-close" onclick={handleCloseButton}>✕</button>
       </header>
     {/if}
     <div class="dialog-body">
