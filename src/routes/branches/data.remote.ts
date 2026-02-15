@@ -170,6 +170,12 @@ export const createBranch = command(
 			await gitService.createBranch(name, startPoint);
 			await metadataService.updateCheckoutDate(name);
 			
+			// Refresh queries that depend on branch list
+			await getBranches().refresh();
+			await getStarredBranches().refresh();
+			await getStats().refresh();
+			await getRecentCommits().refresh();
+			
 			return { success: true, branch: name };
 		} catch (error) {
 			console.error(`Failed to create branch '${name}':`, error);
@@ -230,6 +236,12 @@ export const deleteBranch = command(
 		try {
 			await gitService.deleteBranch(branch, { force, remote });
 			await metadataService.delete(branch);
+			
+			// Refresh queries that depend on branch list
+			await getBranches().refresh();
+			await getStarredBranches().refresh();
+			await getStats().refresh();
+			await getRecentCommits().refresh();
 			
 			return { success: true, branch };
 		} catch (error) {
