@@ -1,0 +1,101 @@
+:root {
+	/* Backgrounds */
+	--color-bg-page: #faf8f5;
+	--color-bg-surface: #ffffff;
+	--color-bg-surface-secondary: #f7f4f0;
+	--color-bg-hover: #f3efe9;
+	--color-bg-current-branch: linear-gradient(to right, #f2f9f0, #ffffff);
+
+	/* Text */
+	--color-text-primary: #2c2417;
+	--color-text-secondary: #6b5e4f;
+
+	/* Borders */
+	--color-border: #e3ddd4;
+	--color-border-input: #d4cbbf;
+
+	/* Accent: Primary (warm amber/branch) */
+	--color-accent-blue: #b07618;
+	--color-accent-blue-hover: #946212;
+
+	/* Accent: Green (leafy) */
+	--color-accent-green: #4a9c2e;
+	--color-accent-green-hover: #3d8526;
+
+	/* Accent: Star */
+	--color-accent-star: #d4a017;
+	--color-star-bg: #fff8dc;
+
+	/* Error */
+	--color-error-text: #c93030;
+	--color-error-bg: #fff5f5;
+	--color-error-border: #e88a5a;
+
+	/* Shadows & Overlays */
+	--color-shadow: rgba(44, 36, 23, 0.08);
+	--color-shadow-modal: rgba(44, 36, 23, 0.15);
+	--color-overlay: rgba(44, 36, 23, 0.45);
+
+	/* Focus ring */
+	--color-focus-ring: rgba(176, 118, 24, 0.15);
+}
+
+@media (prefers-color-scheme: dark) {
+	:root {
+		/* Backgrounds */
+		--color-bg-page: #12100d;
+		--color-bg-surface: #1c1814;
+		--color-bg-surface-secondary: #262019;
+		--color-bg-hover: #332c22;
+		--color-bg-current-branch: linear-gradient(to right, #162013, #1c1814);
+
+		/* Text */
+		--color-text-primary: #ede6dc;
+		--color-text-secondary: #9b8e7d;
+
+		/* Borders */
+		--color-border: #332c22;
+		--color-border-input: #40372a;
+
+		/* Accent: Primary (warm amber/branch) */
+		--color-accent-blue: #e0a832;
+		--color-accent-blue-hover: #efc04e;
+
+		/* Accent: Green (leafy) */
+		--color-accent-green: #5cb83a;
+		--color-accent-green-hover: #72d14e;
+
+		/* Accent: Star */
+		--color-accent-star: #e3b341;
+		--color-star-bg: #2a2415;
+
+		/* Error */
+		--color-error-text: #f07070;
+		--color-error-bg: #201212;
+		--color-error-border: #c94040;
+
+		/* Shadows & Overlays */
+		--color-shadow: rgba(0, 0, 0, 0.3);
+		--color-shadow-modal: rgba(0, 0, 0, 0.5);
+		--color-overlay: rgba(0, 0, 0, 0.7);
+
+		/* Focus ring */
+		--color-focus-ring: rgba(224, 168, 50, 0.2);
+	}
+}
+
+body {
+	font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Noto Sans', Helvetica, Arial, sans-serif;
+	background: var(--color-bg-page);
+	margin: 0;
+	padding: 20px;
+	color: var(--color-text-primary);
+}
+
+/* Force form controls to inherit color so they don't use UA black text in dark mode */
+button,
+input,
+select,
+textarea {
+	color: inherit;
+}

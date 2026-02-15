@@ -1,0 +1,49 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 128 128" width="128" height="128">
+  <!-- Branch/twig -->
+  <path d="M10 88 Q30 82 50 78 Q70 74 90 70 Q105 67 120 62" stroke="#8B6914" stroke-width="5" fill="none" stroke-linecap="round"/>
+  <!-- Small twig offshoots -->
+  <path d="M85 71 Q92 58 98 50" stroke="#8B6914" stroke-width="3" fill="none" stroke-linecap="round"/>
+  <path d="M42 80 Q38 68 32 60" stroke="#8B6914" stroke-width="3" fill="none" stroke-linecap="round"/>
+  <!-- Tiny leaf -->
+  <path d="M30 60 Q26 50 32 46 Q38 50 34 60 Z" fill="#6ab04c"/>
+  <path d="M96 50 Q100 42 106 40 Q104 48 98 52 Z" fill="#6ab04c"/>
+
+  <!-- Bird body -->
+  <ellipse cx="64" cy="62" rx="18" ry="16" fill="#FFD93D"/>
+  <!-- Bird belly -->
+  <ellipse cx="64" cy="66" rx="13" ry="11" fill="#FFF3B0"/>
+
+  <!-- Bird head -->
+  <circle cx="64" cy="42" r="14" fill="#FFD93D"/>
+
+  <!-- Eyes -->
+  <circle cx="58" cy="40" r="4" fill="#2d3436"/>
+  <circle cx="70" cy="40" r="4" fill="#2d3436"/>
+  <!-- Eye shine -->
+  <circle cx="59.5" cy="38.5" r="1.5" fill="white"/>
+  <circle cx="71.5" cy="38.5" r="1.5" fill="white"/>
+
+  <!-- Beak -->
+  <path d="M62 46 L64 52 L66 46 Z" fill="#FF9F43"/>
+
+  <!-- Blush cheeks -->
+  <ellipse cx="52" cy="44" rx="3.5" ry="2" fill="#FFAAAA" opacity="0.5"/>
+  <ellipse cx="76" cy="44" rx="3.5" ry="2" fill="#FFAAAA" opacity="0.5"/>
+
+  <!-- Wings (small, fledgling-style) -->
+  <path d="M46 56 Q38 52 36 60 Q40 62 46 60 Z" fill="#F0C419"/>
+  <path d="M82 56 Q90 52 92 60 Q88 62 82 60 Z" fill="#F0C419"/>
+
+  <!-- Tiny tail feathers -->
+  <path d="M60 76 Q56 82 52 84" stroke="#F0C419" stroke-width="3" fill="none" stroke-linecap="round"/>
+  <path d="M64 77 Q64 84 62 86" stroke="#F0C419" stroke-width="3" fill="none" stroke-linecap="round"/>
+
+  <!-- Feet gripping the branch -->
+  <path d="M56 76 L54 80 L50 79" stroke="#FF9F43" stroke-width="2.5" fill="none" stroke-linecap="round" stroke-linejoin="round"/>
+  <path d="M56 76 L56 81 L58 80" stroke="#FF9F43" stroke-width="2.5" fill="none" stroke-linecap="round" stroke-linejoin="round"/>
+  <path d="M72 74 L70 79 L66 78" stroke="#FF9F43" stroke-width="2.5" fill="none" stroke-linecap="round" stroke-linejoin="round"/>
+  <path d="M72 74 L74 79 L76 78" stroke="#FF9F43" stroke-width="2.5" fill="none" stroke-linecap="round" stroke-linejoin="round"/>
+
+  <!-- Tiny tuft on head -->
+  <path d="M62 28 Q60 22 64 20 Q68 22 66 28" fill="#FFD93D"/>
+</svg>
