@@ -1,7 +1,14 @@
 <script lang="ts">
- 	import { checkoutBranch, toggleStar, deleteBranch, updateDescription, getBranches, getStarredBranches, getBranch, getStats, getRecentCommits } from '../../routes/branches/data.remote';
+  	import { checkoutBranch, toggleStar, deleteBranch, updateDescription, getBranches, getStarredBranches, getBranch, getStats, getRecentCommits } from '../../routes/branches/data.remote';
 	import DescriptionForm from './DescriptionForm.svelte';
 	import type { BranchWithMetadata } from '$lib/server/git/types';
+
+	function getErrorMessage(err: unknown): string {
+		if (err && typeof err === 'object' && 'message' in err) {
+			return String(err.message);
+		}
+		return String(err);
+	}
 
 	let {
 		branch,
@@ -10,6 +17,7 @@
 		onToggleStar,
 		onDelete,
 		onEditComplete,
+		onError,
 		showDescriptionForm = false
 	}: {
 		branch: BranchWithMetadata;
@@ -18,6 +26,7 @@
 		onToggleStar?: (name: string) => void;
 		onDelete?: (name: string) => void;
 		onEditComplete?: () => void;
+		onError?: (message: string) => void;
 		showDescriptionForm?: boolean;
 	} = $props();
 	let showDescription = $state(false);
@@ -28,11 +37,16 @@
 		isLoading = true;
 
 		try {
-			await checkoutBranch(branch.name);
+			const result = await checkoutBranch(branch.name);
+			if (!result.success) {
+				onError?.(result.error);
+				onCheckout?.(branch.name);
+				return;
+			}
 			onCheckout?.(branch.name);
 		} catch (error) {
 			console.error('Failed to checkout:', error);
-			alert(`Failed to checkout branch: ${error instanceof Error ? error.message : 'Unknown error'}`);
+			onError?.(getErrorMessage(error));
 		} finally {
 			isLoading = false;
 		}
@@ -59,7 +73,7 @@
 		}
 		} catch (error) {
 			console.error('Failed to toggle star:', error);
-			alert(`Failed to toggle star: ${error instanceof Error ? error.message : 'Unknown error'}`);
+			alert(`Failed to toggle star: ${getErrorMessage(error)}`);
 		}
 	}
 	
@@ -75,7 +89,7 @@
 			onDelete?.(branch.name);
 		} catch (error) {
 			console.error('Failed to delete branch:', error);
-			alert(`Failed to delete branch: ${error instanceof Error ? error.message : 'Unknown error'}`);
+			alert(`Failed to delete branch: ${getErrorMessage(error)}`);
 		}
 	}
 	

@@ -2,11 +2,19 @@
   import { getBranches, getStarredBranches, getStats, getRecentCommits, getRepoPath, checkoutBranch, toggleStar, deleteBranch } from './branches/data.remote';
   import BranchCard from '$lib/components/BranchCard.svelte';
   import FilterControls from '$lib/components/FilterControls.svelte';
+  import ErrorDialog from '$lib/components/ErrorDialog.svelte';
   import type { BranchWithMetadata, RecentCommit } from '$lib/server/git/types';
   import { createKeyboardNav } from '$lib/keyboard/handler.svelte';
   import HelpOverlay from '$lib/keyboard/HelpOverlay.svelte';
   import faviconUrl from '$lib/assets/favicon.svg';
   import { invalidateAll } from '$app/navigation';
+
+  function getErrorMessage(err: unknown): string {
+    if (err && typeof err === 'object' && 'message' in err) {
+      return String(err.message);
+    }
+    return String(err);
+  }
 
 	// State
   let filter = $state('all');
@@ -16,6 +24,13 @@
   let error = $state<string | null>(null);
   let showCreateForm = $state(false);
   let editingBranchName = $state<string | null>(null);
+  let showError = $state(false);
+  let errorMessage = $state('');
+
+  function showErrorDialog(msg: string) {
+    errorMessage = msg;
+    showError = true;
+  }
 
   // Remote-derived sources (async-derived)
   let all = $derived(await getBranches());
@@ -88,10 +103,14 @@
 
   async function handleCheckout(name: string) {
     try {
-      await checkoutBranch(name);
+      const result = await checkoutBranch(name);
+      if (!result.success) {
+        showErrorDialog(result.error);
+        return;
+      }
     } catch (err) {
       console.error('Failed to checkout:', err);
-      alert(`Failed to checkout branch: ${err instanceof Error ? err.message : 'Unknown error'}`);
+      showErrorDialog(getErrorMessage(err));
     }
   }
 
@@ -103,7 +122,7 @@
       );
     } catch (err) {
       console.error('Failed to toggle star:', err);
-      alert(`Failed to toggle star: ${err instanceof Error ? err.message : 'Unknown error'}`);
+      showErrorDialog(getErrorMessage(err));
     }
   }
 
@@ -122,7 +141,7 @@
       }
     } catch (err) {
       console.error('Failed to delete branch:', err);
-      alert(`Failed to delete branch: ${err instanceof Error ? err.message : 'Unknown error'}`);
+      showErrorDialog(getErrorMessage(err));
     }
   }
 
@@ -271,6 +290,7 @@
                           onDelete={(name) => handleDelete(name)}
                           showDescriptionForm={editingBranchName === branch.name}
                           onEditComplete={() => editingBranchName = null}
+                          onError={showErrorDialog}
                         />
                     {/each}
                 </div>
@@ -285,6 +305,10 @@
 
 {#if nav.showHelp}
 	<HelpOverlay onClose={() => nav.showHelp = false} />
+{/if}
+
+{#if showError}
+	<ErrorDialog bind:open={showError} title="Error" message={errorMessage} />
 {/if}
 
 <style>

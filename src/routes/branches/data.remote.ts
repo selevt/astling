@@ -4,6 +4,8 @@ import { gitService } from '$lib/server/git/commands';
 import { metadataService } from '$lib/server/storage/metadata';
 import type { GitBranch, BranchWithMetadata, RecentCommit } from '$lib/server/git/types';
 
+export type CommandResult = { success: true; branch?: string } | { success: false; error: string };
+
 // Repo configuration helpers
 export const getRepoPath = query(async () => {
     try {
@@ -141,7 +143,7 @@ export const getCurrentBranch = query(async () => {
 });
 
 // Command to checkout a branch (updates recent tracking)
-export const checkoutBranch = command(v.string(), async (branchName) => {
+export const checkoutBranch = command(v.string(), async (branchName): Promise<CommandResult> => {
 	try {
 		await gitService.checkoutBranch(branchName);
 		await metadataService.updateCheckoutDate(branchName);
@@ -154,8 +156,9 @@ export const checkoutBranch = command(v.string(), async (branchName) => {
 
 		return { success: true, branch: branchName };
 	} catch (error) {
-		console.error(`Failed to checkout branch '${branchName}':`, error);
-		throw new Error(`Failed to checkout branch '${branchName}': ${error instanceof Error ? error.message : 'Unknown error'}`);
+		const message = error instanceof Error ? error.message : String(error);
+		console.error(`Failed to checkout branch '${branchName}':`, message);
+		return { success: false, error: message };
 	}
 });
 
