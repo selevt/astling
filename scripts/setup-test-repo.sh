@@ -5,13 +5,14 @@
 set -euo pipefail
 
 REPO_DIR="test-repo"
+REMOTE_DIR="test-remote.git"
 
-if [ -d "$REPO_DIR/.git" ]; then
-  echo "test-repo already exists — skipping. Remove it first to recreate."
+if [ -d "$REPO_DIR/.git" ] && [ "${1:-}" != "-f" ]; then
+  echo "test-repo already exists — pass -f to force recreate."
   exit 0
 fi
 
-rm -rf "$REPO_DIR"
+rm -rf "$REPO_DIR" "$REMOTE_DIR"
 mkdir "$REPO_DIR"
 cd "$REPO_DIR"
 git init
@@ -44,8 +45,24 @@ commit "src/user-service.ts" "fix null pointer in user service"
 git checkout -b chore/update-deps --quiet
 commit "package.json" "bump dependencies"
 
+## --- Set up a bare remote with a stale ref ---
+# Go back to project root
+cd ..
+git clone --bare "$REPO_DIR" "$REMOTE_DIR" --quiet
+
+# Point test-repo at this bare remote
+cd "$REPO_DIR"
+git remote add origin "../$REMOTE_DIR"
+git fetch origin --quiet
+
+# Delete a branch on the remote directly so test-repo has a stale tracking ref
+git -C "../$REMOTE_DIR" branch -D feature/auth 2>/dev/null || true
+
 echo ""
 echo "test-repo created with branches:"
 git branch --list
 echo ""
 echo "Current branch: $(git branch --show-current)"
+echo ""
+echo "Stale remote refs (should show origin/feature/auth):"
+git remote prune origin --dry-run 2>&1 || true

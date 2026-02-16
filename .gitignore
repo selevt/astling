@@ -10,6 +10,7 @@ node_modules
 
 # Test repository (bootstrapped via scripts/setup-test-repo.sh)
 test-repo/
+test-remote.git/
 
 # OS
 .DS_Store

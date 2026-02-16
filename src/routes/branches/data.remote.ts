@@ -319,6 +319,62 @@ export const getStats = query(async () => {
 	}
 });
 
+// Query to get stale remote-tracking branches (with throttle)
+export const getStaleBranches = query(async () => {
+	try {
+		const pruneMeta = await metadataService.getPruneMeta();
+		if (metadataService.shouldSkipPruneCheck(pruneMeta)) {
+			return { staleRefs: [] as string[], autoPruneEnabled: false };
+		}
+
+		const staleRefs = await gitService.getStaleBranches();
+		const autoPruneEnabled = await gitService.getAutoPruneEnabled();
+		await metadataService.setPruneMeta(staleRefs.length);
+
+		return { staleRefs, autoPruneEnabled };
+	} catch (error) {
+		console.error('Failed to check stale branches:', error);
+		return { staleRefs: [] as string[], autoPruneEnabled: false };
+	}
+});
+
+// Command to prune stale remote-tracking refs
+export const pruneRemote = command(async () => {
+	try {
+		const pruned = await gitService.pruneRemote();
+		await metadataService.setPruneMeta(0);
+		await getStaleBranches().refresh();
+		await getBranches().refresh();
+		return { success: true, pruned };
+	} catch (error) {
+		console.error('Failed to prune remote:', error);
+		throw new Error(`Failed to prune: ${error instanceof Error ? error.message : 'Unknown error'}`);
+	}
+});
+
+// Command to enable auto-prune on fetch
+export const setAutoPrune = command(async () => {
+	try {
+		await gitService.setAutoPrune(true);
+		// Also prune now since we're enabling auto-prune
+		const pruned = await gitService.pruneRemote();
+		await metadataService.setPruneMeta(0);
+		await getStaleBranches().refresh();
+		await getBranches().refresh();
+		return { success: true, pruned };
+	} catch (error) {
+		console.error('Failed to set auto-prune:', error);
+		throw new Error(`Failed to set auto-prune: ${error instanceof Error ? error.message : 'Unknown error'}`);
+	}
+});
+
+// Command to dismiss/snooze prune suggestion
+export const dismissPruneSuggestion = command(async () => {
+	await metadataService.setPruneMeta(0);
+	await getStaleBranches().refresh();
+	return { success: true };
+});
+
 // Command to pull changes for a branch
 export const pullBranch = command(v.optional(v.string()), async (branchName) => {
 	try {

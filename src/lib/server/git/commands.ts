@@ -294,6 +294,45 @@ export class GitService {
 		return checkouts;
 	}
 
+	async getStaleBranches(): Promise<string[]> {
+		const result = await this.execGitCommand('remote prune origin --dry-run');
+		if (!result.success) return [];
+
+		// Output lines look like: " * [would prune] origin/feature/auth"
+		const stale: string[] = [];
+		for (const line of (result.output + '\n' + (result.error || '')).split('\n')) {
+			const match = line.match(/\[would prune\]\s+(.+)/);
+			if (match) stale.push(match[1].trim());
+		}
+		return stale;
+	}
+
+	async pruneRemote(): Promise<string[]> {
+		const result = await this.execGitCommand('remote prune origin');
+		if (!result.success) {
+			throw new Error(`Failed to prune remote: ${result.error}`);
+		}
+
+		const pruned: string[] = [];
+		for (const line of (result.output + '\n' + (result.error || '')).split('\n')) {
+			const match = line.match(/\[pruned\]\s+(.+)/);
+			if (match) pruned.push(match[1].trim());
+		}
+		return pruned;
+	}
+
+	async getAutoPruneEnabled(): Promise<boolean> {
+		const result = await this.execGitCommand('config --get remote.origin.prune');
+		return result.success && result.output.trim() === 'true';
+	}
+
+	async setAutoPrune(enabled: boolean): Promise<void> {
+		const result = await this.execGitCommand(`config remote.origin.prune ${enabled ? 'true' : 'false'}`);
+		if (!result.success) {
+			throw new Error(`Failed to set auto-prune: ${result.error}`);
+		}
+	}
+
 	async getRepositoryStatus(): Promise<any> {
 		const result = await this.execGitCommand('status --porcelain=2');
 		

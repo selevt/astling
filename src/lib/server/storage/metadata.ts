@@ -212,6 +212,30 @@ export class MetadataService {
 		}
 	}
 
+	// --- Prune check throttle ---
+	private static readonly PRUNE_KEY = '__prune_meta__';
+	private static readonly PRUNE_CHECK_INTERVAL_MS = 3 * 24 * 60 * 60 * 1000; // 3 days
+
+	async getPruneMeta(): Promise<{ lastCheck: number; lastResult: number }> {
+		const metadata = await this.readMetadata();
+		const raw = (metadata as any)[MetadataService.PRUNE_KEY];
+		return { lastCheck: raw?.lastCheck ?? 0, lastResult: raw?.lastResult ?? 0 };
+	}
+
+	async setPruneMeta(staleCount: number): Promise<void> {
+		const metadata = await this.readMetadata();
+		(metadata as any)[MetadataService.PRUNE_KEY] = {
+			lastCheck: Date.now(),
+			lastResult: staleCount,
+		};
+		await this.writeMetadata(metadata);
+	}
+
+	shouldSkipPruneCheck(meta: { lastCheck: number; lastResult: number }): boolean {
+		if (meta.lastResult > 0) return false; // always re-check if last time found stale refs
+		return Date.now() - meta.lastCheck < MetadataService.PRUNE_CHECK_INTERVAL_MS;
+	}
+
 	async mergeWithGitBranches(gitBranches: string[]): Promise<void> {
 		const metadata = await this.readMetadata();
 		let hasChanges = false;
@@ -230,6 +254,7 @@ export class MetadataService {
 		// Remove entries for branches that no longer exist in git
 		const gitBranchSet = new Set(gitBranches);
 		for (const metadataBranchName of Object.keys(metadata)) {
+			if (metadataBranchName === MetadataService.PRUNE_KEY) continue;
 			if (!gitBranchSet.has(metadataBranchName)) {
 				delete metadata[metadataBranchName];
 				hasChanges = true;

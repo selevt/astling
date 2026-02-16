@@ -1,5 +1,5 @@
 <script lang="ts">
-  import { getBranches, getStarredBranches, getStats, getRecentCommits, getRepoPath, checkoutBranch, toggleStar, deleteBranch } from './branches/data.remote';
+  import { getBranches, getStarredBranches, getStats, getRecentCommits, getRepoPath, checkoutBranch, toggleStar, deleteBranch, getStaleBranches, pruneRemote, setAutoPrune, dismissPruneSuggestion } from './branches/data.remote';
   import BranchCard from '$lib/components/BranchCard.svelte';
   import FilterControls from '$lib/components/FilterControls.svelte';
   import ErrorDialog from '$lib/components/ErrorDialog.svelte';
@@ -38,6 +38,8 @@
   let starred = $derived(await getStarredBranches());
   let statsData = $derived(await getStats());
   let recentCommits = $derived(await getRecentCommits());
+  let pruneInfo = $derived(await getStaleBranches());
+  let isPruning = $state(false);
 
   // Compose visible branch list as an async-derived signal. Template will
   // await it where needed.
@@ -149,6 +151,36 @@
     }
   }
 
+  async function handlePrune() {
+    isPruning = true;
+    try {
+      await pruneRemote();
+    } catch (err) {
+      showErrorDialog(getErrorMessage(err));
+    } finally {
+      isPruning = false;
+    }
+  }
+
+  async function handleAutoPrune() {
+    isPruning = true;
+    try {
+      await setAutoPrune();
+    } catch (err) {
+      showErrorDialog(getErrorMessage(err));
+    } finally {
+      isPruning = false;
+    }
+  }
+
+  async function handleDismissPrune() {
+    try {
+      await dismissPruneSuggestion();
+    } catch (err) {
+      console.error('Failed to dismiss prune suggestion:', err);
+    }
+  }
+
   const nav = createKeyboardNav(
     () => branchListPlain as BranchWithMetadata[],
     {
@@ -227,6 +259,27 @@
 						{/each}
 					</div>
 				{/if}
+			</div>
+		</section>
+	{/if}
+
+	{#if pruneInfo && pruneInfo.staleRefs.length > 0}
+		<section class="prune-banner">
+			<div class="prune-content">
+				<div class="prune-text">
+					<strong>{pruneInfo.staleRefs.length}</strong> stale remote tracking reference{pruneInfo.staleRefs.length === 1 ? '' : 's'}
+				</div>
+				<div class="prune-actions">
+					<button class="prune-btn prune-btn-primary" onclick={handlePrune} disabled={isPruning}>
+						{isPruning ? 'Pruning...' : 'Prune now'}
+					</button>
+					<button class="prune-btn prune-btn-secondary" onclick={handleAutoPrune} disabled={isPruning}>
+						Enable auto-prune
+					</button>
+					<button class="prune-btn prune-btn-dismiss" onclick={handleDismissPrune}>
+						Dismiss
+					</button>
+				</div>
 			</div>
 		</section>
 	{/if}
@@ -604,6 +657,79 @@
 		font-size: 13px;
 		flex-shrink: 0;
 		text-align: right;
+	}
+
+	/* Prune banner */
+	.prune-banner {
+		margin-bottom: 24px;
+		background: var(--color-bg-surface);
+		border: 1px solid var(--color-warning-border, #d4a017);
+		border-radius: 8px;
+		padding: 16px 20px;
+	}
+
+	.prune-content {
+		display: flex;
+		align-items: center;
+		justify-content: space-between;
+		gap: 16px;
+		flex-wrap: wrap;
+	}
+
+	.prune-text {
+		font-size: 14px;
+		color: var(--color-text-primary);
+	}
+
+	.prune-actions {
+		display: flex;
+		gap: 8px;
+		flex-wrap: wrap;
+	}
+
+	.prune-btn {
+		padding: 6px 14px;
+		border-radius: 6px;
+		font-size: 13px;
+		font-weight: 500;
+		cursor: pointer;
+		border: 1px solid transparent;
+		transition: all 0.15s ease;
+	}
+
+	.prune-btn:disabled {
+		opacity: 0.5;
+		cursor: not-allowed;
+	}
+
+	.prune-btn-primary {
+		background: var(--color-accent-blue);
+		color: white;
+		border-color: var(--color-accent-blue);
+	}
+
+	.prune-btn-primary:hover:not(:disabled) {
+		filter: brightness(1.1);
+	}
+
+	.prune-btn-secondary {
+		background: transparent;
+		color: var(--color-text-primary);
+		border-color: var(--color-border);
+	}
+
+	.prune-btn-secondary:hover:not(:disabled) {
+		background: var(--color-bg-hover);
+	}
+
+	.prune-btn-dismiss {
+		background: transparent;
+		color: var(--color-text-secondary);
+		border-color: transparent;
+	}
+
+	.prune-btn-dismiss:hover {
+		color: var(--color-text-primary);
 	}
 
 	/* Pending key badge */
