@@ -1,10 +1,10 @@
-import { exec } from 'child_process';
+import { execFile, spawn } from 'child_process';
 import { promisify } from 'util';
 import { join } from 'path';
 import { access, constants } from 'fs/promises';
 import type { GitBranch, GitCommandResult, BranchDeleteOptions, RecentCommit } from './types';
 
-const execAsync = promisify(exec);
+const execFileAsync = promisify(execFile);
 
 export class GitService {
     private repoPath: string;
@@ -54,7 +54,7 @@ export class GitService {
         console.log('GitService targetBranch updated to', this.targetBranch);
     }
 
-	private async execGitCommand(command: string): Promise<GitCommandResult> {
+	private async execGitCommand(args: string[]): Promise<GitCommandResult> {
 		if (!(await this.isGitRepo())) {
 			return {
 				success: false,
@@ -64,16 +64,16 @@ export class GitService {
 		}
 
 		try {
-			const fullCommand = `cd "${this.repoPath}" && git ${command}`;
-			console.log('Executing git command:', fullCommand);
-			
-			const { stdout, stderr } = await execAsync(fullCommand, {
-				timeout: 15000  // Increased timeout
+			console.log('Executing git command:', 'git', args.join(' '));
+
+			const { stdout, stderr } = await execFileAsync('git', args, {
+				cwd: this.repoPath,
+				timeout: 15000
 			});
 
 			const output = stdout.trim();
 			const error = stderr.trim();
-			
+
 			console.log('Command success, output length:', output.length);
 			console.log('Command stderr:', error);
 			console.log('First 200 chars of output:', output.substring(0, 200));
@@ -93,9 +93,50 @@ export class GitService {
 		}
 	}
 
+	/**
+	 * Execute a pipeline of two git commands, piping stdout of the first into stdin of the second.
+	 * Both commands run without a shell, avoiding injection risks.
+	 */
+	private async execGitPipeline(args1: string[], args2: string[]): Promise<GitCommandResult> {
+		if (!(await this.isGitRepo())) {
+			return { success: false, output: '', error: 'Not a git repository' };
+		}
+
+		return new Promise((resolve) => {
+			const opts = { cwd: this.repoPath };
+
+			const proc1 = spawn('git', args1, opts);
+			const proc2 = spawn('git', args2, opts);
+
+			proc1.stdout.pipe(proc2.stdin);
+
+			let stdout = '';
+			let stderr = '';
+
+			proc2.stdout.on('data', (data: Buffer) => { stdout += data.toString(); });
+			proc2.stderr.on('data', (data: Buffer) => { stderr += data.toString(); });
+			proc1.stderr.on('data', (data: Buffer) => { stderr += data.toString(); });
+
+			proc1.on('error', (err) => {
+				resolve({ success: false, output: '', error: err.message });
+			});
+			proc2.on('error', (err) => {
+				resolve({ success: false, output: '', error: err.message });
+			});
+
+			proc2.on('close', (code) => {
+				resolve({
+					success: code === 0,
+					output: stdout.trim(),
+					error: stderr.trim() || undefined
+				});
+			});
+		});
+	}
+
 	async getAllBranches(): Promise<GitBranch[]> {
 		// Get all branches with detailed info
-		const result = await this.execGitCommand('branch -vv --format="%(refname:short)|%(objectname)|%(subject)|%(authorname)|%(committerdate:iso8601)|%(HEAD)"');
+		const result = await this.execGitCommand(['branch', '-vv', '--format=%(refname:short)|%(objectname)|%(subject)|%(authorname)|%(committerdate:iso8601)|%(HEAD)']);
 
 		// If the configured path is not a git repository, return empty list instead of throwing
 		if (!result.success) {
@@ -107,41 +148,41 @@ export class GitService {
 
 		const lines = result.output.split('\n').filter(line => line.trim());
 		const branches: GitBranch[] = [];
-		
+
 		for (const line of lines) {
 			const parts = line.split('|');
 			if (parts.length >= 5) {
 				const [rawName, hash, message, author, date, headMarker] = parts;
-				
+
 				// Skip empty lines or malformed data
 				if (!rawName || !hash) continue;
-				
+
 				// Check if this is the current branch
 				const isCurrent = headMarker?.trim() === '*';
-				
+
 				// Extract clean branch name from rawName
 				// Remove leading '* ' and any trailing tracking info
 				const cleanName = rawName
 					.replace(/^\* /, '')           // Remove current branch marker
 					.replace(/\[.*?\]$/, '')       // Remove [tracking-info]
 					.trim();
-				
+
 				// Parse tracking info if present
 				let ahead: number | undefined;
 				let behind: number | undefined;
 				let tracking: string | undefined;
-				
+
 				const trackingMatch = rawName.match(/\[([^\]]+)\]/);
 				if (trackingMatch) {
 					tracking = trackingMatch[1];
-					
+
 					// Parse ahead/behind from tracking info
 					const aheadMatch = tracking.match(/ahead (\d+)/);
 					const behindMatch = tracking.match(/behind (\d+)/);
 					if (aheadMatch) ahead = parseInt(aheadMatch[1]);
 					if (behindMatch) behind = parseInt(behindMatch[1]);
 				}
-				
+
 				if (cleanName) {
 					branches.push({
 						name: cleanName,
@@ -168,23 +209,23 @@ export class GitService {
 	}
 
 	async checkoutBranch(branchName: string): Promise<void> {
-		const result = await this.execGitCommand(`checkout "${branchName}"`);
-		
+		const result = await this.execGitCommand(['checkout', branchName]);
+
 		if (!result.success) {
 			throw new Error(`Failed to checkout branch '${branchName}': ${result.error}`);
 		}
 	}
 
 	async createBranch(branchName: string, startPoint: string = 'HEAD'): Promise<void> {
-		const result = await this.execGitCommand(`checkout -b "${branchName}" "${startPoint}"`);
-		
+		const result = await this.execGitCommand(['checkout', '-b', branchName, startPoint]);
+
 		if (!result.success) {
 			throw new Error(`Failed to create branch '${branchName}': ${result.error}`);
 		}
 	}
 
 	async renameBranch(oldName: string, newName: string): Promise<void> {
-		const result = await this.execGitCommand(`branch -m "${oldName}" "${newName}"`);
+		const result = await this.execGitCommand(['branch', '-m', oldName, newName]);
 
 		if (!result.success) {
 			throw new Error(`Failed to rename branch '${oldName}' to '${newName}': ${result.error}`);
@@ -192,20 +233,17 @@ export class GitService {
 	}
 
 	async deleteBranch(branchName: string, options: BranchDeleteOptions = {}): Promise<void> {
-		let command = 'branch -d';
-		if (options.force) {
-			command = 'branch -D';
-		}
-		
-		const result = await this.execGitCommand(`${command} "${branchName}"`);
-		
+		const flag = options.force ? '-D' : '-d';
+
+		const result = await this.execGitCommand(['branch', flag, branchName]);
+
 		if (!result.success) {
 			throw new Error(`Failed to delete branch '${branchName}': ${result.error}`);
 		}
 
 		// Also delete remote branch if requested
 		if (options.remote) {
-			const remoteResult = await this.execGitCommand(`push origin --delete "${branchName}"`);
+			const remoteResult = await this.execGitCommand(['push', 'origin', '--delete', branchName]);
 			if (!remoteResult.success) {
 				console.warn(`Failed to delete remote branch '${branchName}': ${remoteResult.error}`);
 			}
@@ -213,8 +251,8 @@ export class GitService {
 	}
 
 	async getCurrentBranch(): Promise<string | null> {
-		const result = await this.execGitCommand('branch --show-current');
-		
+		const result = await this.execGitCommand(['branch', '--show-current']);
+
 		if (!result.success) {
 			throw new Error(`Failed to get current branch: ${result.error}`);
 		}
@@ -223,25 +261,27 @@ export class GitService {
 	}
 
 	async pullBranch(branchName?: string): Promise<void> {
-		const command = branchName ? `pull origin "${branchName}"` : 'pull';
-		const result = await this.execGitCommand(command);
-		
+		const args = branchName ? ['pull', 'origin', branchName] : ['pull'];
+		const result = await this.execGitCommand(args);
+
 		if (!result.success) {
 			throw new Error(`Failed to pull${branchName ? ` branch '${branchName}'` : ''}: ${result.error}`);
 		}
 	}
 
 	async pushBranch(branchName: string, setUpstream: boolean = false): Promise<void> {
-		const command = setUpstream ? `push -u origin "${branchName}"` : `push origin "${branchName}"`;
-		const result = await this.execGitCommand(command);
-		
+		const args = setUpstream
+			? ['push', '-u', 'origin', branchName]
+			: ['push', 'origin', branchName];
+		const result = await this.execGitCommand(args);
+
 		if (!result.success) {
 			throw new Error(`Failed to push branch '${branchName}': ${result.error}`);
 		}
 	}
 
 	async getRecentCommits(n: number = 3): Promise<RecentCommit[]> {
-		const result = await this.execGitCommand(`log --oneline -n ${n} --format="%h|%s|%ar|%D"`);
+		const result = await this.execGitCommand(['log', '--oneline', '-n', String(n), '--format=%h|%s|%ar|%D']);
 
 		if (!result.success) {
 			return [];
@@ -290,7 +330,7 @@ export class GitService {
 	 */
 	async getCheckoutHistory(): Promise<Array<{ branch: string; date: string }>> {
 		const result = await this.execGitCommand(
-			'reflog --format="%gd|%gs" --date=iso'
+			['reflog', '--format=%gd|%gs', '--date=iso']
 		);
 
 		if (!result.success) return [];
@@ -323,7 +363,7 @@ export class GitService {
 	}
 
 	async getStaleBranches(): Promise<string[]> {
-		const result = await this.execGitCommand('remote prune origin --dry-run');
+		const result = await this.execGitCommand(['remote', 'prune', 'origin', '--dry-run']);
 		if (!result.success) return [];
 
 		// Output lines look like: " * [would prune] origin/feature/auth"
@@ -336,7 +376,7 @@ export class GitService {
 	}
 
 	async pruneRemote(): Promise<string[]> {
-		const result = await this.execGitCommand('remote prune origin');
+		const result = await this.execGitCommand(['remote', 'prune', 'origin']);
 		if (!result.success) {
 			throw new Error(`Failed to prune remote: ${result.error}`);
 		}
@@ -350,12 +390,12 @@ export class GitService {
 	}
 
 	async getAutoPruneEnabled(): Promise<boolean> {
-		const result = await this.execGitCommand('config --get remote.origin.prune');
+		const result = await this.execGitCommand(['config', '--get', 'remote.origin.prune']);
 		return result.success && result.output.trim() === 'true';
 	}
 
 	async setAutoPrune(enabled: boolean): Promise<void> {
-		const result = await this.execGitCommand(`config remote.origin.prune ${enabled ? 'true' : 'false'}`);
+		const result = await this.execGitCommand(['config', 'remote.origin.prune', enabled ? 'true' : 'false']);
 		if (!result.success) {
 			throw new Error(`Failed to set auto-prune: ${result.error}`);
 		}
@@ -365,7 +405,7 @@ export class GitService {
 		const currentBranch = await this.getCurrentBranch();
 
 		// Step 1: branches fully merged (fast-forward / real merge)
-		const mergedResult = await this.execGitCommand(`branch --merged "${target}"`);
+		const mergedResult = await this.execGitCommand(['branch', '--merged', target]);
 		const triviallyMerged = new Set<string>();
 		if (mergedResult.success) {
 			for (const line of mergedResult.output.split('\n')) {
@@ -377,9 +417,7 @@ export class GitService {
 		}
 
 		// Step 2: for remaining branches, detect squash merges via patch-id.
-		// Compute the combined patch-id of the branch's diff (merge-base → branch),
-		// then check if any commit on the target has the same patch-id.
-		const allResult = await this.execGitCommand('branch --format="%(refname:short)"');
+		const allResult = await this.execGitCommand(['branch', '--format=%(refname:short)']);
 		if (!allResult.success) return [...triviallyMerged];
 
 		const allBranches = allResult.output.split('\n').map(l => l.trim()).filter(Boolean);
@@ -389,29 +427,31 @@ export class GitService {
 		if (remaining.length === 0) return [...triviallyMerged];
 
 		// Build a set of patch-ids for all commits on the target (from oldest merge-base)
-		// We need the broadest range, so find the earliest merge-base across all remaining branches.
 		const targetPatchIds = new Set<string>();
 		let earliestBase: string | null = null;
 
 		for (const branch of remaining) {
-			const baseResult = await this.execGitCommand(`merge-base "${target}" "${branch}"`);
+			const baseResult = await this.execGitCommand(['merge-base', target, branch]);
 			if (!baseResult.success || !baseResult.output.trim()) continue;
 			const mb = baseResult.output.trim();
 			if (!earliestBase) {
 				earliestBase = mb;
 			} else {
 				// Pick the older (more ancestral) merge-base
-				const isAncestor = await this.execGitCommand(`merge-base --is-ancestor "${mb}" "${earliestBase}"`);
+				const isAncestor = await this.execGitCommand(['merge-base', '--is-ancestor', mb, earliestBase]);
 				if (isAncestor.success) earliestBase = mb;
 			}
 		}
 
 		if (earliestBase) {
 			// Collect patch-ids for each commit on target since the earliest merge-base
-			const logResult = await this.execGitCommand(`log --format="%H" "${earliestBase}..${target}"`);
+			const logResult = await this.execGitCommand(['log', '--format=%H', `${earliestBase}..${target}`]);
 			if (logResult.success) {
 				for (const sha of logResult.output.split('\n').filter(l => l.trim())) {
-					const pidResult = await this.execGitCommand(`diff "${sha}^" "${sha}" | git patch-id --stable`);
+					const pidResult = await this.execGitPipeline(
+						['diff', `${sha}^`, sha],
+						['patch-id', '--stable']
+					);
 					if (pidResult.success && pidResult.output.trim()) {
 						const pid = pidResult.output.trim().split(/\s+/)[0];
 						if (pid) targetPatchIds.add(pid);
@@ -424,11 +464,14 @@ export class GitService {
 
 		for (const branch of remaining) {
 			// Compute the branch's combined patch-id
-			const baseResult = await this.execGitCommand(`merge-base "${target}" "${branch}"`);
+			const baseResult = await this.execGitCommand(['merge-base', target, branch]);
 			if (!baseResult.success || !baseResult.output.trim()) continue;
 			const mergeBase = baseResult.output.trim();
 
-			const pidResult = await this.execGitCommand(`diff "${mergeBase}" "${branch}" | git patch-id --stable`);
+			const pidResult = await this.execGitPipeline(
+				['diff', mergeBase, branch],
+				['patch-id', '--stable']
+			);
 			if (!pidResult.success || !pidResult.output.trim()) continue;
 
 			const branchPid = pidResult.output.trim().split(/\s+/)[0];
@@ -441,8 +484,8 @@ export class GitService {
 	}
 
 	async getRepositoryStatus(): Promise<any> {
-		const result = await this.execGitCommand('status --porcelain=2');
-		
+		const result = await this.execGitCommand(['status', '--porcelain=2']);
+
 		if (!result.success) {
 			throw new Error(`Failed to get repository status: ${result.error}`);
 		}
