@@ -3,6 +3,7 @@
   import BranchCard from '$lib/components/BranchCard.svelte';
   import FilterControls from '$lib/components/FilterControls.svelte';
   import ErrorDialog from '$lib/components/ErrorDialog.svelte';
+  import MergedBranchesDialog from '$lib/components/MergedBranchesDialog.svelte';
   import type { BranchWithMetadata, RecentCommit } from '$lib/server/git/types';
   import { createKeyboardNav } from '$lib/keyboard/handler.svelte';
   import HelpOverlay from '$lib/keyboard/HelpOverlay.svelte';
@@ -27,6 +28,7 @@
   let renamingBranchName = $state<string | null>(null);
   let showError = $state(false);
   let errorMessage = $state('');
+  let showMergedDialog = $state(false);
 
   function showErrorDialog(msg: string) {
     errorMessage = msg;
@@ -193,6 +195,7 @@
       createBranch: () => { showCreateForm = true; },
       editDescription: (b) => { editingBranchName = b.name; },
       renameBranch: (b) => { renamingBranchName = b.name; },
+      findMerged: () => { showMergedDialog = true; },
     }
   );
 </script>
@@ -295,6 +298,7 @@
 			onFilterChange={handleFilterChange}
 			onSearchChange={handleSearchChange}
 			onSortChange={handleSortChange}
+			onFindMerged={() => showMergedDialog = true}
 			bind:showCreateForm
 		/>
 
@@ -376,6 +380,10 @@
 
 {#if showError}
 	<ErrorDialog bind:open={showError} title="Error" message={errorMessage} />
+{/if}
+
+{#if showMergedDialog}
+	<MergedBranchesDialog bind:open={showMergedDialog} onComplete={reload} />
 {/if}
 
 <style>

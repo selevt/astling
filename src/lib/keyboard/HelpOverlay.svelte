@@ -34,6 +34,7 @@
       <dl>
         <dt><kbd>g a</kbd></dt><dd>All branches</dd>
         <dt><kbd>g s</kbd></dt><dd>Starred</dd>
+        <dt><kbd>g m</kbd></dt><dd>Find merged</dd>
       </dl>
     </div>
   </div>

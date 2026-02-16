@@ -375,6 +375,43 @@ export const dismissPruneSuggestion = command(async () => {
 	return { success: true };
 });
 
+// Query to find branches fully merged into the target branch (on-demand, expensive)
+export const findMergedBranches = query(async () => {
+	try {
+		const target = gitService.getTargetBranch();
+		return await gitService.findMergedBranches(target);
+	} catch (error) {
+		console.error('Failed to find merged branches:', error);
+		throw new Error(`Failed to find merged branches: ${error instanceof Error ? error.message : 'Unknown error'}`);
+	}
+});
+
+// Command to delete multiple branches at once
+export const deleteMergedBranches = command(
+	v.array(v.string()),
+	async (branches): Promise<{ deleted: string[]; failed: Array<{ branch: string; error: string }> }> => {
+		const deleted: string[] = [];
+		const failed: Array<{ branch: string; error: string }> = [];
+
+		for (const branch of branches) {
+			try {
+				await gitService.deleteBranch(branch, { force: true });
+				await metadataService.delete(branch);
+				deleted.push(branch);
+			} catch (error) {
+				failed.push({ branch, error: error instanceof Error ? error.message : String(error) });
+			}
+		}
+
+		await getBranches().refresh();
+		await getStarredBranches().refresh();
+		await getStats().refresh();
+		await getRecentCommits().refresh();
+
+		return { deleted, failed };
+	}
+);
+
 // Command to pull changes for a branch
 export const pullBranch = command(v.optional(v.string()), async (branchName) => {
 	try {

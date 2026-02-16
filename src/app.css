@@ -43,6 +43,7 @@
 	--color-error-text: #c93030;
 	--color-error-bg: #fff5f5;
 	--color-error-border: #e88a5a;
+	--color-error-btn-text: #ffffff;
 
 	/* Shadows & Overlays */
 	--color-shadow: rgba(44, 36, 23, 0.08);
@@ -99,6 +100,7 @@
 		--color-error-text: #f07070;
 		--color-error-bg: #201212;
 		--color-error-border: #c94040;
+		--color-error-btn-text: #1a0808;
 
 		/* Shadows & Overlays */
 		--color-shadow: rgba(0, 0, 0, 0.3);

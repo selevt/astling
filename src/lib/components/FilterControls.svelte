@@ -12,6 +12,7 @@ import Dialog from './Dialog.svelte';
 		onSearchChange,
 		onSortChange,
 		onCreateBranch,
+		onFindMerged,
 		showCreateForm = $bindable(false)
 	}: {
 		currentFilter: string;
@@ -21,6 +22,7 @@ import Dialog from './Dialog.svelte';
 		onSearchChange: (term: string) => void;
 		onSortChange: (sort: string) => void;
 		onCreateBranch?: (name: string) => void;
+		onFindMerged?: () => void;
 		showCreateForm?: boolean;
 	} = $props();
 	
@@ -213,6 +215,14 @@ import Dialog from './Dialog.svelte';
 		</div>
 		
 		<button
+			class="find-merged-btn"
+			onclick={() => onFindMerged?.()}
+			title="Find branches merged into target"
+		>
+			🧹 Find Merged
+		</button>
+
+		<button
 			class="create-branch-btn"
 			onclick={() => showCreateForm = !showCreateForm}
 		>
@@ -383,6 +393,23 @@ import Dialog from './Dialog.svelte';
 		outline: none;
 		border-color: var(--color-accent-blue);
 		box-shadow: 0 0 0 3px var(--color-focus-ring);
+	}
+
+	.find-merged-btn {
+		padding: 8px 16px;
+		background: var(--color-bg-surface);
+		color: var(--color-text-primary);
+		border: 1px solid var(--color-border-input);
+		border-radius: 6px;
+		cursor: pointer;
+		font-size: 14px;
+		font-weight: 500;
+		transition: all 0.2s ease;
+	}
+
+	.find-merged-btn:hover {
+		background: var(--color-bg-hover);
+		border-color: var(--color-border-input);
 	}
 
 	.create-branch-btn {

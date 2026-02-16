@@ -10,6 +10,7 @@ export interface KeyboardNavActions {
 	createBranch: () => void;
 	editDescription: (branch: BranchWithMetadata) => void;
 	renameBranch: (branch: BranchWithMetadata) => void;
+	findMerged: () => void;
 }
 
 export function createKeyboardNav(
@@ -126,6 +127,9 @@ export function createKeyboardNav(
 					break;
 				case 's':
 					actions.setFilter('starred');
+					break;
+				case 'm':
+					actions.findMerged();
 					break;
 			}
 			return;

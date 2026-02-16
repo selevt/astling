@@ -361,6 +361,85 @@ export class GitService {
 		}
 	}
 
+	async findMergedBranches(target: string): Promise<string[]> {
+		const currentBranch = await this.getCurrentBranch();
+
+		// Step 1: branches fully merged (fast-forward / real merge)
+		const mergedResult = await this.execGitCommand(`branch --merged "${target}"`);
+		const triviallyMerged = new Set<string>();
+		if (mergedResult.success) {
+			for (const line of mergedResult.output.split('\n')) {
+				const name = line.replace(/^\*?\s+/, '').trim();
+				if (name && name !== target && name !== currentBranch) {
+					triviallyMerged.add(name);
+				}
+			}
+		}
+
+		// Step 2: for remaining branches, detect squash merges via patch-id.
+		// Compute the combined patch-id of the branch's diff (merge-base → branch),
+		// then check if any commit on the target has the same patch-id.
+		const allResult = await this.execGitCommand('branch --format="%(refname:short)"');
+		if (!allResult.success) return [...triviallyMerged];
+
+		const allBranches = allResult.output.split('\n').map(l => l.trim()).filter(Boolean);
+		const remaining = allBranches.filter(
+			b => b !== target && b !== currentBranch && !triviallyMerged.has(b)
+		);
+		if (remaining.length === 0) return [...triviallyMerged];
+
+		// Build a set of patch-ids for all commits on the target (from oldest merge-base)
+		// We need the broadest range, so find the earliest merge-base across all remaining branches.
+		const targetPatchIds = new Set<string>();
+		let earliestBase: string | null = null;
+
+		for (const branch of remaining) {
+			const baseResult = await this.execGitCommand(`merge-base "${target}" "${branch}"`);
+			if (!baseResult.success || !baseResult.output.trim()) continue;
+			const mb = baseResult.output.trim();
+			if (!earliestBase) {
+				earliestBase = mb;
+			} else {
+				// Pick the older (more ancestral) merge-base
+				const isAncestor = await this.execGitCommand(`merge-base --is-ancestor "${mb}" "${earliestBase}"`);
+				if (isAncestor.success) earliestBase = mb;
+			}
+		}
+
+		if (earliestBase) {
+			// Collect patch-ids for each commit on target since the earliest merge-base
+			const logResult = await this.execGitCommand(`log --format="%H" "${earliestBase}..${target}"`);
+			if (logResult.success) {
+				for (const sha of logResult.output.split('\n').filter(l => l.trim())) {
+					const pidResult = await this.execGitCommand(`diff "${sha}^" "${sha}" | git patch-id --stable`);
+					if (pidResult.success && pidResult.output.trim()) {
+						const pid = pidResult.output.trim().split(/\s+/)[0];
+						if (pid) targetPatchIds.add(pid);
+					}
+				}
+			}
+		}
+
+		const merged = [...triviallyMerged];
+
+		for (const branch of remaining) {
+			// Compute the branch's combined patch-id
+			const baseResult = await this.execGitCommand(`merge-base "${target}" "${branch}"`);
+			if (!baseResult.success || !baseResult.output.trim()) continue;
+			const mergeBase = baseResult.output.trim();
+
+			const pidResult = await this.execGitCommand(`diff "${mergeBase}" "${branch}" | git patch-id --stable`);
+			if (!pidResult.success || !pidResult.output.trim()) continue;
+
+			const branchPid = pidResult.output.trim().split(/\s+/)[0];
+			if (branchPid && targetPatchIds.has(branchPid)) {
+				merged.push(branch);
+			}
+		}
+
+		return merged;
+	}
+
 	async getRepositoryStatus(): Promise<any> {
 		const result = await this.execGitCommand('status --porcelain=2');
 		
