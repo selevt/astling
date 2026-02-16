@@ -25,6 +25,19 @@ Open [http://localhost:5173](http://localhost:5173). Configure the repo path in 
 
 Branch metadata (stars, descriptions) is stored in `.git/branches.json`. Checkout timestamps are synced from the git reflog on each load.
 
+## Configuration
+
+| Variable | Default | Description |
+|---|---|---|
+| `GIT_REPO_PATH` | `./test-repo` | Path to the git repository to manage |
+| `TARGET_BRANCH` | `main` | The branch you develop into (used as default start point when creating branches) |
+
+```bash
+GIT_REPO_PATH=~/projects/my-app TARGET_BRANCH=develop npm run dev
+```
+
+Both values can also be changed at runtime via the UI.
+
 ## Stack
 
 Svelte 5, SvelteKit remote functions, TypeScript, Valibot

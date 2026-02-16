@@ -47,6 +47,19 @@ export const setRepoPath = command(
     }
 );
 
+// Target branch configuration
+export const getTargetBranch = query(async () => {
+    return gitService.getTargetBranch();
+});
+
+export const setTargetBranch = command(
+    v.pipe(v.string(), v.nonEmpty('Target branch is required')),
+    async (branch) => {
+        gitService.setTargetBranch(branch.trim());
+        return { success: true, branch: gitService.getTargetBranch() };
+    }
+);
+
 // Query to get all branches with their metadata
 export const getBranches = query(async () => {
 	// Validate configured repo before attempting git operations. If not valid, return

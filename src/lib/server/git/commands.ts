@@ -8,11 +8,13 @@ const execAsync = promisify(exec);
 
 export class GitService {
     private repoPath: string;
+    private targetBranch: string;
 
     constructor(repoPath?: string) {
         // Default to an explicit test subfolder to avoid operating on the app repo itself.
         // Allow overriding with the GIT_REPO_PATH environment variable or an explicit constructor arg.
         this.repoPath = repoPath ?? process.env.GIT_REPO_PATH ?? join(process.cwd(), 'test-repo');
+        this.targetBranch = process.env.TARGET_BRANCH ?? 'main';
     }
 
     // Public method to validate an arbitrary path (useful for UI validation)
@@ -41,6 +43,15 @@ export class GitService {
     setRepoPath(path: string) {
         this.repoPath = path;
         console.log('GitService repoPath updated to', this.repoPath);
+    }
+
+    getTargetBranch(): string {
+        return this.targetBranch;
+    }
+
+    setTargetBranch(branch: string) {
+        this.targetBranch = branch;
+        console.log('GitService targetBranch updated to', this.targetBranch);
     }
 
 	private async execGitCommand(command: string): Promise<GitCommandResult> {
