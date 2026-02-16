@@ -185,7 +185,7 @@
 
   :global(.dialog-btn-primary) {
     background: var(--color-accent-green);
-    color: white;
+    color: var(--color-accent-green-text);
     border: 1px solid var(--color-accent-green);
   }
 

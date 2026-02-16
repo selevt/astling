@@ -305,7 +305,7 @@ import Dialog from './Dialog.svelte';
 
 	.filter-btn.active {
 		background: var(--color-accent-blue);
-		color: white;
+		color: var(--color-accent-blue-text);
 		border-color: var(--color-accent-blue);
 	}
 
@@ -388,7 +388,7 @@ import Dialog from './Dialog.svelte';
 	.create-branch-btn {
 		padding: 8px 16px;
 		background: var(--color-accent-green);
-		color: white;
+		color: var(--color-accent-green-text);
 		border: 1px solid var(--color-accent-green);
 		border-radius: 6px;
 		cursor: pointer;
@@ -489,7 +489,7 @@ import Dialog from './Dialog.svelte';
 
 	.save-repo-btn {
 		background: var(--color-accent-blue);
-		color: white;
+		color: var(--color-accent-blue-text);
 		border: 1px solid var(--color-accent-blue);
 	}
 

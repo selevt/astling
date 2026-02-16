@@ -575,7 +575,7 @@
 	.error-message button {
 		padding: 8px 16px;
 		background: var(--color-accent-blue);
-		color: white;
+		color: var(--color-accent-blue-text);
 		border: 1px solid var(--color-accent-blue);
 		border-radius: 6px;
 		cursor: pointer;
@@ -708,7 +708,7 @@
 
 	.prune-btn-primary {
 		background: var(--color-accent-blue);
-		color: white;
+		color: var(--color-accent-blue-text);
 		border-color: var(--color-accent-blue);
 	}
 

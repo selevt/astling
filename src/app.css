@@ -15,12 +15,14 @@
 	--color-border-input: #d4cbbf;
 
 	/* Accent: Primary (warm amber/branch) */
-	--color-accent-blue: #b07618;
-	--color-accent-blue-hover: #946212;
+	--color-accent-blue: #8a5a0f;
+	--color-accent-blue-hover: #724b0c;
+	--color-accent-blue-text: #ffffff;
 
 	/* Accent: Green (leafy) */
-	--color-accent-green: #4a9c2e;
-	--color-accent-green-hover: #3d8526;
+	--color-accent-green: #3a7d22;
+	--color-accent-green-hover: #306a1c;
+	--color-accent-green-text: #ffffff;
 
 	/* Accent: Star */
 	--color-accent-star: #d4a017;
@@ -37,7 +39,7 @@
 	--color-overlay: rgba(44, 36, 23, 0.45);
 
 	/* Focus ring */
-	--color-focus-ring: rgba(176, 118, 24, 0.15);
+	--color-focus-ring: rgba(138, 90, 15, 0.15);
 }
 
 @media (prefers-color-scheme: dark) {
@@ -60,10 +62,12 @@
 		/* Accent: Primary (warm amber/branch) */
 		--color-accent-blue: #e0a832;
 		--color-accent-blue-hover: #efc04e;
+		--color-accent-blue-text: #1a1308;
 
 		/* Accent: Green (leafy) */
 		--color-accent-green: #5cb83a;
 		--color-accent-green-hover: #72d14e;
+		--color-accent-green-text: #0a1f05;
 
 		/* Accent: Star */
 		--color-accent-star: #e3b341;

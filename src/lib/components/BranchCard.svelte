@@ -292,7 +292,7 @@
 	.current-badge {
 		font-size: 10px;
 		font-weight: 500;
-		color: white;
+		color: var(--color-accent-green-text);
 		background: var(--color-accent-green);
 		padding: 2px 6px;
 		border-radius: 12px;
@@ -370,7 +370,7 @@
 
 	.checkout-btn.current {
 		background: var(--color-accent-green);
-		color: white;
+		color: var(--color-accent-green-text);
 		border-color: var(--color-accent-green);
 	}
 
