@@ -9,6 +9,7 @@ export interface KeyboardNavActions {
 	refresh: () => void;
 	createBranch: () => void;
 	editDescription: (branch: BranchWithMetadata) => void;
+	renameBranch: (branch: BranchWithMetadata) => void;
 }
 
 export function createKeyboardNav(
@@ -191,6 +192,12 @@ export function createKeyboardNav(
 				e.preventDefault();
 				const b = getSelectedBranch();
 				if (b) actions.editDescription(b);
+				break;
+			}
+			case 'R': {
+				e.preventDefault();
+				const b = getSelectedBranch();
+				if (b) actions.renameBranch(b);
 				break;
 			}
 			case 'Escape':

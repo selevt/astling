@@ -183,6 +183,14 @@ export class GitService {
 		}
 	}
 
+	async renameBranch(oldName: string, newName: string): Promise<void> {
+		const result = await this.execGitCommand(`branch -m "${oldName}" "${newName}"`);
+
+		if (!result.success) {
+			throw new Error(`Failed to rename branch '${oldName}' to '${newName}': ${result.error}`);
+		}
+	}
+
 	async deleteBranch(branchName: string, options: BranchDeleteOptions = {}): Promise<void> {
 		let command = 'branch -d';
 		if (options.force) {

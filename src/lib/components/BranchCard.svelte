@@ -1,6 +1,7 @@
 <script lang="ts">
   	import { checkoutBranch, toggleStar, deleteBranch, updateDescription, getBranches, getStarredBranches, getBranch, getStats, getRecentCommits } from '../../routes/branches/data.remote';
 	import DescriptionForm from './DescriptionForm.svelte';
+	import RenameForm from './RenameForm.svelte';
 	import type { BranchWithMetadata } from '$lib/server/git/types';
 
 	function getErrorMessage(err: unknown): string {
@@ -17,8 +18,10 @@
 		onToggleStar,
 		onDelete,
 		onEditComplete,
+		onRenameComplete,
 		onError,
-		showDescriptionForm = false
+		showDescriptionForm = false,
+		showRenameForm = false
 	}: {
 		branch: BranchWithMetadata;
 		selected?: boolean;
@@ -26,8 +29,10 @@
 		onToggleStar?: (name: string) => void;
 		onDelete?: (name: string) => void;
 		onEditComplete?: () => void;
+		onRenameComplete?: () => void;
 		onError?: (message: string) => void;
 		showDescriptionForm?: boolean;
+		showRenameForm?: boolean;
 	} = $props();
 	let showDescription = $state(false);
 	let isLoading = $state(false);
@@ -180,8 +185,18 @@
 			>
 				{isLoading ? '...' : branch.current ? 'Active' : 'Checkout'}
 			</button>
-			<button 
-				class="delete-btn" 
+			<button
+				class="rename-btn"
+				onclick={(e) => { e.stopPropagation(); showRenameForm = true; }}
+				title="Rename branch"
+			>
+				<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+					<path d="M17 3a2.85 2.83 0 1 1 4 4L7.5 20.5 2 22l1.5-5.5Z"/>
+					<path d="m15 5 4 4"/>
+				</svg>
+			</button>
+			<button
+				class="delete-btn"
 				onclick={handleDelete}
 				disabled={branch.current}
 				title={branch.current ? 'Cannot delete current branch' : 'Delete branch'}
@@ -214,6 +229,15 @@
 			currentDescription={branch.description}
 			onSave={handleSaveDescription}
 			onCancel={handleCancelDescription}
+		/>
+	{/if}
+
+	{#if showRenameForm}
+		<RenameForm
+			branchName={branch.name}
+			onSave={() => { showRenameForm = false; onRenameComplete?.(); }}
+			onCancel={() => { showRenameForm = false; onRenameComplete?.(); }}
+			onError={onError}
 		/>
 	{/if}
 </div>
@@ -294,7 +318,7 @@
 		align-items: center;
 	}
 
-	.star-btn, .checkout-btn, .delete-btn {
+	.star-btn, .checkout-btn, .delete-btn, .rename-btn {
 		padding: 6px 12px;
 		border: 1px solid var(--color-border-input);
 		border-radius: 6px;
@@ -311,6 +335,21 @@
 		height: 32px;
 		padding: 0;
 		line-height: 1;
+	}
+
+	.rename-btn {
+		color: var(--color-text-secondary);
+		display: flex;
+		align-items: center;
+		justify-content: center;
+		width: 32px;
+		height: 32px;
+		padding: 0;
+	}
+
+	.rename-btn:hover {
+		color: var(--color-accent-blue);
+		border-color: var(--color-accent-blue);
 	}
 
 	.star-btn:hover, .checkout-btn:hover, .delete-btn:hover {

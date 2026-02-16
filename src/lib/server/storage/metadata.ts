@@ -94,15 +94,13 @@ export class MetadataService {
 		const metadata = await this.readMetadata();
 		
 		const existing = metadata[branchName] || {
-			name: branchName,
 			starred: false,
 			checkoutCount: 0
 		};
 
 		const updated: BranchMetadata = {
 			...existing,
-			...updates,
-			name: branchName // Ensure name is always correct
+			...updates
 		};
 
 		metadata[branchName] = updated;
@@ -133,6 +131,15 @@ export class MetadataService {
 		return await this.createOrUpdate(branchName, {
 			description: description.trim() || undefined
 		});
+	}
+
+	async rename(oldName: string, newName: string): Promise<void> {
+		const metadata = await this.readMetadata();
+		if (metadata[oldName]) {
+			metadata[newName] = metadata[oldName];
+			delete metadata[oldName];
+			await this.writeMetadata(metadata);
+		}
 	}
 
 	async delete(branchName: string): Promise<void> {
@@ -213,7 +220,6 @@ export class MetadataService {
 		for (const branchName of gitBranches) {
 			if (!metadata[branchName]) {
 				metadata[branchName] = {
-					name: branchName,
 					starred: false,
 					checkoutCount: 0
 				};

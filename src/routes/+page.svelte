@@ -24,6 +24,7 @@
   let error = $state<string | null>(null);
   let showCreateForm = $state(false);
   let editingBranchName = $state<string | null>(null);
+  let renamingBranchName = $state<string | null>(null);
   let showError = $state(false);
   let errorMessage = $state('');
 
@@ -85,8 +86,11 @@
     return raw;
   });
 
-  function reload() {
-	invalidateAll();
+  async function reload() {
+    isLoading = true;
+    const minDelay = new Promise((r) => setTimeout(r, 400));
+    await Promise.all([invalidateAll(), minDelay]);
+    isLoading = false;
   }
 
   function handleFilterChange(newFilter: string) {
@@ -156,6 +160,7 @@
       refresh: reload,
       createBranch: () => { showCreateForm = true; },
       editDescription: (b) => { editingBranchName = b.name; },
+      renameBranch: (b) => { renamingBranchName = b.name; },
     }
   );
 </script>
@@ -290,6 +295,8 @@
                           onDelete={(name) => handleDelete(name)}
                           showDescriptionForm={editingBranchName === branch.name}
                           onEditComplete={() => editingBranchName = null}
+                          showRenameForm={renamingBranchName === branch.name}
+                          onRenameComplete={() => renamingBranchName = null}
                           onError={showErrorDialog}
                         />
                     {/each}

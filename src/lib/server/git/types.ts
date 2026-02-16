@@ -11,7 +11,6 @@ export interface GitBranch {
 }
 
 export interface BranchMetadata {
-	name: string;
 	starred: boolean;
 	description?: string;
 	lastCheckedOut?: string;

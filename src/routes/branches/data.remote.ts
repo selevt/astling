@@ -83,8 +83,8 @@ export const getBranches = query(async () => {
 		const metadata = await metadataService.getAll();
 
 		const branches: BranchWithMetadata[] = rawBranches.map((branch) => ({
-			...branch,
-			...metadata[branch.name]
+			...metadata[branch.name],
+			...branch
 		}));
 
 		return branches;
@@ -237,6 +237,30 @@ export const updateDescription = command(
 		} catch (error) {
 			console.error(`Failed to update description for branch '${branch}':`, error);
 			throw new Error(`Failed to update description for branch '${branch}': ${error instanceof Error ? error.message : 'Unknown error'}`);
+		}
+	}
+);
+
+// Command to rename a branch
+export const renameBranch = command(
+	v.object({
+		oldName: v.pipe(v.string(), v.nonEmpty('Current branch name is required')),
+		newName: v.pipe(v.string(), v.nonEmpty('New branch name is required'))
+	}),
+	async ({ oldName, newName }) => {
+		try {
+			await gitService.renameBranch(oldName, newName);
+			await metadataService.rename(oldName, newName);
+
+			await getBranches().refresh();
+			await getStarredBranches().refresh();
+			await getStats().refresh();
+			await getRecentCommits().refresh();
+
+			return { success: true, oldName, newName };
+		} catch (error) {
+			console.error(`Failed to rename branch '${oldName}' to '${newName}':`, error);
+			throw new Error(`Failed to rename branch: ${error instanceof Error ? error.message : 'Unknown error'}`);
 		}
 	}
 );
