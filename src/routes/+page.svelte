@@ -3,6 +3,7 @@
   import BranchCard from '$lib/components/BranchCard.svelte';
   import FilterControls from '$lib/components/FilterControls.svelte';
   import ErrorDialog from '$lib/components/ErrorDialog.svelte';
+  import DeleteConfirmDialog from '$lib/components/DeleteConfirmDialog.svelte';
   import MergedBranchesDialog from '$lib/components/MergedBranchesDialog.svelte';
   import type { BranchWithMetadata, RecentCommit } from '$lib/server/git/types';
   import { createKeyboardNav } from '$lib/keyboard/handler.svelte';
@@ -29,6 +30,9 @@
   let showError = $state(false);
   let errorMessage = $state('');
   let showMergedDialog = $state(false);
+  let showDeleteDialog = $state(false);
+  let deleteBranchName = $state('');
+  let deleteError = $state<string | null>(null);
 
   function showErrorDialog(msg: string) {
     errorMessage = msg;
@@ -134,22 +138,29 @@
     }
   }
 
-  async function handleDelete(name: string) {
-    if (!confirm(`Are you sure you want to delete branch '${name}'?`)) return;
+  function handleDelete(name: string) {
+    deleteBranchName = name;
+    deleteError = null;
+    showDeleteDialog = true;
+  }
+
+  async function performDelete(force: boolean) {
+    const name = deleteBranchName;
     const list = branchListPlain as BranchWithMetadata[];
     const idx = list.findIndex(b => b.name === name);
-    try {
-      await deleteBranch({ branch: name, force: false, remote: false });
-      // Move selection to next branch (or previous if last)
-      if (idx >= 0 && list.length > 1) {
-        const nextIdx = idx < list.length - 1 ? idx + 1 : idx - 1;
-        nav.selectedBranch = list[nextIdx].name;
-      } else {
-        nav.selectedBranch = null;
-      }
-    } catch (err) {
-      console.error('Failed to delete branch:', err);
-      showErrorDialog(getErrorMessage(err));
+    const result = await deleteBranch({ branch: name, force, remote: false });
+    if (!result.success) {
+      deleteError = result.error;
+      showDeleteDialog = true;
+      return;
+    }
+    showDeleteDialog = false;
+    // Move selection to next branch (or previous if last)
+    if (idx >= 0 && list.length > 1) {
+      const nextIdx = idx < list.length - 1 ? idx + 1 : idx - 1;
+      nav.selectedBranch = list[nextIdx].name;
+    } else {
+      nav.selectedBranch = null;
     }
   }
 
@@ -380,6 +391,17 @@
 
 {#if showError}
 	<ErrorDialog bind:open={showError} title="Error" message={errorMessage} />
+{/if}
+
+{#if showDeleteDialog}
+	<DeleteConfirmDialog
+		bind:open={showDeleteDialog}
+		branchName={deleteBranchName}
+		errorMessage={deleteError}
+		onConfirm={() => performDelete(false)}
+		onForceDelete={() => performDelete(true)}
+		onCancel={() => showDeleteDialog = false}
+	/>
 {/if}
 
 {#if showMergedDialog}

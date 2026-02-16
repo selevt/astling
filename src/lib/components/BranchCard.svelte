@@ -1,5 +1,5 @@
 <script lang="ts">
-  	import { checkoutBranch, toggleStar, deleteBranch, updateDescription, getBranches, getStarredBranches, getBranch, getStats, getRecentCommits } from '../../routes/branches/data.remote';
+  	import { checkoutBranch, toggleStar, getBranches, getStarredBranches, getBranch } from '../../routes/branches/data.remote';
 	import DescriptionForm from './DescriptionForm.svelte';
 	import RenameForm from './RenameForm.svelte';
 	import type { BranchWithMetadata } from '$lib/server/git/types';
@@ -82,20 +82,9 @@
 		}
 	}
 	
-	async function handleDelete(event: MouseEvent) {
+	function handleDelete(event: MouseEvent) {
 		event.stopPropagation();
-		
-		if (!confirm(`Are you sure you want to delete branch '${branch.name}'?`)) {
-			return;
-		}
-		
-		try {
-			await deleteBranch({ branch: branch.name, force: false, remote: false });
-			onDelete?.(branch.name);
-		} catch (error) {
-			console.error('Failed to delete branch:', error);
-			alert(`Failed to delete branch: ${getErrorMessage(error)}`);
-		}
+		onDelete?.(branch.name);
 	}
 	
 	function formatDate(dateString: string | undefined): string {

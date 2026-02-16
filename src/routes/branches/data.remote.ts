@@ -276,17 +276,18 @@ export const deleteBranch = command(
 		try {
 			await gitService.deleteBranch(branch, { force, remote });
 			await metadataService.delete(branch);
-			
+
 			// Refresh queries that depend on branch list
 			await getBranches().refresh();
 			await getStarredBranches().refresh();
 			await getStats().refresh();
 			await getRecentCommits().refresh();
-			
-			return { success: true, branch };
+
+			return { success: true as const, branch };
 		} catch (error) {
 			console.error(`Failed to delete branch '${branch}':`, error);
-			throw new Error(`Failed to delete branch '${branch}': ${error instanceof Error ? error.message : 'Unknown error'}`);
+			const message = error instanceof Error ? error.message : 'Unknown error';
+			return { success: false as const, error: message };
 		}
 	}
 );
