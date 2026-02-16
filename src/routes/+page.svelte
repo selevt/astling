@@ -303,7 +303,11 @@
 			</div>
 		{:else if isLoading}
 			<div class="loading-state">
-				<div class="loading-spinner">🔄</div>
+				<svg class="loading-spinner" width="32" height="32" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
+					<path d="M1.5 8a6.5 6.5 0 0 1 11.25-4.5M14.5 8a6.5 6.5 0 0 1-11.25 4.5"/>
+					<polyline points="13 1 13 4.5 9.5 4.5"/>
+					<polyline points="3 15 3 11.5 6.5 11.5"/>
+				</svg>
 				<h3>Loading branches...</h3>
 			</div>
 		{:else}
@@ -514,9 +518,9 @@
 	}
 
 	.loading-spinner {
-		font-size: 32px;
 		margin-bottom: 16px;
-		animation: spin 1s linear infinite;
+		color: var(--color-text-secondary);
+		animation: spin 0.8s linear infinite;
 	}
 
 	.loading-state h3 {
