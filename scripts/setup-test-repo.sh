@@ -45,6 +45,9 @@ commit "src/user-service.ts" "fix null pointer in user service"
 git checkout -b chore/update-deps --quiet
 commit "package.json" "bump dependencies"
 
+# --- Tag on main for ref badge testing ---
+git tag v1.0 main
+
 ## --- Set up a bare remote with a stale ref ---
 # Go back to project root
 cd ..

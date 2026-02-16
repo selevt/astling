@@ -30,8 +30,16 @@ export interface BranchDeleteOptions {
 	remote?: boolean;
 }
 
+export interface RefBadge {
+	name: string;
+	type: 'branch' | 'remote' | 'tag' | 'head';
+	/** true when a matching origin/ remote ref exists */
+	synced?: boolean;
+}
+
 export interface RecentCommit {
 	hash: string;
 	message: string;
 	relativeDate: string;
+	refs: RefBadge[];
 }

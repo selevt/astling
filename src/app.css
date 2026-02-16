@@ -24,6 +24,17 @@
 	--color-accent-green-hover: #306a1c;
 	--color-accent-green-text: #ffffff;
 
+	/* Ref badges */
+	--color-badge-green-bg: #e8f5e2;
+	--color-badge-green-text: #1a4012;
+	--color-badge-green-border: #6da55a;
+	--color-badge-blue-bg: #f0eadd;
+	--color-badge-blue-text: #3d2e10;
+	--color-badge-blue-border: #a68940;
+	--color-badge-yellow-bg: #fef4d6;
+	--color-badge-yellow-text: #5c4003;
+	--color-badge-yellow-border: #b8922a;
+
 	/* Accent: Star */
 	--color-accent-star: #d4a017;
 	--color-star-bg: #fff8dc;
@@ -68,6 +79,17 @@
 		--color-accent-green: #5cb83a;
 		--color-accent-green-hover: #72d14e;
 		--color-accent-green-text: #0a1f05;
+
+		/* Ref badges */
+		--color-badge-green-bg: #1a2e14;
+		--color-badge-green-text: #b0e0a0;
+		--color-badge-green-border: #3a7030;
+		--color-badge-blue-bg: #2a2415;
+		--color-badge-blue-text: #e0c880;
+		--color-badge-blue-border: #7a6530;
+		--color-badge-yellow-bg: #2a2210;
+		--color-badge-yellow-text: #e8d090;
+		--color-badge-yellow-border: #8a7020;
 
 		/* Accent: Star */
 		--color-accent-star: #e3b341;

@@ -253,6 +253,9 @@
 						{#each recentCommits as commit (commit.hash)}
 							<div class="commit-row">
 								<code class="commit-hash">{commit.hash}</code>
+								{#each commit.refs as ref}
+									<span class="ref-badge ref-badge--{ref.type}">{ref.name}{#if ref.synced}<svg class="ref-cloud" viewBox="0 0 24 24" fill="currentColor"><title>on remote</title><path d="M19.35 10.04A7.49 7.49 0 0 0 12 4C9.11 4 6.6 5.64 5.35 8.04A5.994 5.994 0 0 0 0 14c0 3.31 2.69 6 6 6h13c2.76 0 5-2.24 5-5 0-2.64-2.05-4.78-4.65-4.96z" opacity="0.55"/></svg>{/if}</span>
+								{/each}
 								<span class="commit-message">{commit.message}</span>
 								<span class="commit-date">{commit.relativeDate}</span>
 							</div>
@@ -661,6 +664,53 @@
 		font-size: 13px;
 		flex-shrink: 0;
 		text-align: right;
+	}
+
+	.ref-badge {
+		font-size: 11px;
+		font-weight: 500;
+		padding: 1px 6px;
+		border-radius: 10px;
+		flex-shrink: 0;
+		white-space: nowrap;
+	}
+
+	.ref-badge--branch {
+		--badge-bg: var(--color-badge-green-bg);
+		--badge-border: var(--color-badge-green-border);
+		background: var(--badge-bg);
+		color: var(--color-badge-green-text);
+		border: 1px solid var(--badge-border);
+	}
+
+	.ref-badge--remote {
+		--badge-bg: var(--color-badge-blue-bg);
+		--badge-border: var(--color-badge-blue-border);
+		background: var(--badge-bg);
+		color: var(--color-badge-blue-text);
+		border: 1px solid var(--badge-border);
+	}
+
+	.ref-badge--tag {
+		--badge-bg: var(--color-badge-yellow-bg);
+		--badge-border: var(--color-badge-yellow-border);
+		background: var(--badge-bg);
+		color: var(--color-badge-yellow-text);
+		border: 1px solid var(--badge-border);
+	}
+
+	.ref-cloud {
+		width: 14px;
+		height: 10px;
+		margin-left: 3px;
+		vertical-align: -1px;
+		flex-shrink: 0;
+	}
+
+	.ref-badge--head {
+		background: var(--color-accent-purple-bg, #e8d5f5);
+		color: var(--color-accent-purple-text, #5b2d8e);
+		border: 1px solid var(--color-accent-purple-border, #c9a3e0);
 	}
 
 	/* Prune banner */

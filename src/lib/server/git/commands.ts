@@ -241,7 +241,7 @@ export class GitService {
 	}
 
 	async getRecentCommits(n: number = 3): Promise<RecentCommit[]> {
-		const result = await this.execGitCommand(`log --oneline -n ${n} --format="%h|%s|%ar"`);
+		const result = await this.execGitCommand(`log --oneline -n ${n} --format="%h|%s|%ar|%D"`);
 
 		if (!result.success) {
 			return [];
@@ -251,8 +251,36 @@ export class GitService {
 			.split('\n')
 			.filter(line => line.trim())
 			.map(line => {
-				const [hash, message, relativeDate] = line.split('|');
-				return { hash: hash || '', message: message || '', relativeDate: relativeDate || '' };
+				const [hash, message, relativeDate, refsRaw] = line.split('|');
+				const refs: import('./types').RefBadge[] = [];
+				if (refsRaw?.trim()) {
+					const locals = new Set<string>();
+					const remotes = new Set<string>();
+					// First pass: collect local and remote names
+					for (const part of refsRaw.split(',')) {
+						const trimmed = part.trim();
+						if (!trimmed) continue;
+						if (trimmed.startsWith('HEAD ->') || trimmed === 'HEAD') continue;
+						if (trimmed === 'origin/HEAD') continue;
+						if (trimmed.startsWith('tag: ')) {
+							refs.push({ name: trimmed.slice(5), type: 'tag' });
+						} else if (trimmed.startsWith('origin/')) {
+							remotes.add(trimmed.slice(7));
+						} else {
+							locals.add(trimmed);
+						}
+					}
+					// Add local branches, marking synced if matching remote exists
+					for (const name of locals) {
+						refs.push({ name, type: 'branch', synced: remotes.has(name) });
+						remotes.delete(name);
+					}
+					// Remaining remotes with no local match
+					for (const name of remotes) {
+						refs.push({ name: `origin/${name}`, type: 'remote' });
+					}
+				}
+				return { hash: hash || '', message: message || '', relativeDate: relativeDate || '', refs };
 			});
 	}
 
