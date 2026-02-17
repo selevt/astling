@@ -124,14 +124,18 @@
       const result = await checkoutBranch(name);
       if (!result.success) {
         showErrorDialog(result.error);
-        return;
       }
+      return result.success;
     };
+	let viewTransition: ReturnType<typeof document.startViewTransition> | null = null;
     try {
       if (document.startViewTransition) {
-        document.startViewTransition(async () => {
-          await doCheckout();
-		  await tick();
+        viewTransition = document.startViewTransition(async () => {
+          if (await doCheckout()) {
+		    await tick();
+		  } else if (viewTransition?.skipTransition) {
+            viewTransition.skipTransition();
+		  }
         });
       } else {
         await doCheckout();
