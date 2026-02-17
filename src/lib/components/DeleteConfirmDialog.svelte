@@ -111,5 +111,4 @@
 		background: var(--color-error-text);
 		color: white;
 	}
-
 </style>

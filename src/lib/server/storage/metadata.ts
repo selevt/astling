@@ -3,24 +3,24 @@ import { join, dirname } from 'path';
 import type { BranchMetadata } from '../git/types';
 
 export class MetadataService {
-    private metadataPath: string;
-    private cache: Map<string, BranchMetadata> | null = null;
-    private lastRead: number = 0;
-    private readonly CACHE_TTL = 5000; // 5 seconds
+	private metadataPath: string;
+	private cache: Map<string, BranchMetadata> | null = null;
+	private lastRead: number = 0;
+	private readonly CACHE_TTL = 5000; // 5 seconds
 
-    constructor(repoPath?: string) {
-        // Default metadata to a subfolder to avoid polluting the app repo. Allow override
-        const base = repoPath ?? process.env.GIT_REPO_PATH ?? join(process.cwd(), 'test-repo');
-        this.metadataPath = join(base, '.git', 'branches.json');
-    }
+	constructor(repoPath?: string) {
+		// Default metadata to a subfolder to avoid polluting the app repo. Allow override
+		const base = repoPath ?? process.env.GIT_REPO_PATH ?? join(process.cwd(), 'test-repo');
+		this.metadataPath = join(base, '.git', 'branches.json');
+	}
 
-    getMetadataPath(): string {
-        return this.metadataPath;
-    }
+	getMetadataPath(): string {
+		return this.metadataPath;
+	}
 
-    setRepoPath(repoPath: string) {
-        this.metadataPath = join(repoPath, '.git', 'branches.json');
-    }
+	setRepoPath(repoPath: string) {
+		this.metadataPath = join(repoPath, '.git', 'branches.json');
+	}
 
 	private async ensureMetadataFile(): Promise<void> {
 		try {
@@ -29,7 +29,7 @@ export class MetadataService {
 			// Ensure parent directory exists, then create the file with an empty object
 			const dir = dirname(this.metadataPath);
 			try {
-				await import('fs/promises').then(fs => fs.mkdir(dir, { recursive: true }));
+				await import('fs/promises').then((fs) => fs.mkdir(dir, { recursive: true }));
 			} catch (err) {
 				// ignore mkdir errors, will surface on write if needed
 			}
@@ -44,7 +44,7 @@ export class MetadataService {
 	private async readMetadata(): Promise<Record<string, BranchMetadata>> {
 		// Check cache first
 		const now = Date.now();
-		if (this.cache && (now - this.lastRead) < this.CACHE_TTL) {
+		if (this.cache && now - this.lastRead < this.CACHE_TTL) {
 			const result: Record<string, BranchMetadata> = {};
 			this.cache.forEach((value, key) => {
 				result[key] = value;
@@ -56,11 +56,11 @@ export class MetadataService {
 			await this.ensureMetadataFile();
 			const data = await readFile(this.metadataPath, 'utf-8');
 			const metadata = JSON.parse(data);
-			
+
 			// Update cache
 			this.cache = new Map(Object.entries(metadata));
 			this.lastRead = now;
-			
+
 			return metadata;
 		} catch (error) {
 			console.warn('Failed to read metadata file, starting with empty metadata:', error);
@@ -72,7 +72,7 @@ export class MetadataService {
 		try {
 			await this.ensureMetadataFile();
 			await this.dumpMetadata(metadata);
-			
+
 			// Update cache
 			this.cache = new Map(Object.entries(metadata));
 			this.lastRead = Date.now();
@@ -90,9 +90,12 @@ export class MetadataService {
 		return metadata[branchName] || null;
 	}
 
-	async createOrUpdate(branchName: string, updates: Partial<BranchMetadata>): Promise<BranchMetadata> {
+	async createOrUpdate(
+		branchName: string,
+		updates: Partial<BranchMetadata>
+	): Promise<BranchMetadata> {
 		const metadata = await this.readMetadata();
-		
+
 		const existing = metadata[branchName] || {
 			starred: false,
 			checkoutCount: 0
@@ -111,7 +114,7 @@ export class MetadataService {
 
 	async updateCheckoutDate(branchName: string): Promise<BranchMetadata> {
 		const existing = await this.get(branchName);
-		
+
 		return await this.createOrUpdate(branchName, {
 			lastCheckedOut: new Date().toISOString(),
 			checkoutCount: (existing?.checkoutCount || 0) + 1
@@ -121,7 +124,7 @@ export class MetadataService {
 	async toggleStar(branchName: string): Promise<BranchMetadata> {
 		const existing = await this.get(branchName);
 		const newStarState = !(existing?.starred || false);
-		
+
 		return await this.createOrUpdate(branchName, {
 			starred: newStarState
 		});
@@ -226,7 +229,7 @@ export class MetadataService {
 		const metadata = await this.readMetadata();
 		(metadata as any)[MetadataService.PRUNE_KEY] = {
 			lastCheck: Date.now(),
-			lastResult: staleCount,
+			lastResult: staleCount
 		};
 		await this.writeMetadata(metadata);
 	}

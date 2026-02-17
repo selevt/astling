@@ -60,10 +60,19 @@
 
 			if (!currentFile) continue;
 			// Skip per-file meta lines
-			if (line.startsWith('index ') || line.startsWith('new file') || line.startsWith('deleted file') ||
-				line.startsWith('old mode') || line.startsWith('new mode') || line.startsWith('similarity') ||
-				line.startsWith('rename from') || line.startsWith('rename to') ||
-				line.startsWith('--- ') || line.startsWith('+++ ')) continue;
+			if (
+				line.startsWith('index ') ||
+				line.startsWith('new file') ||
+				line.startsWith('deleted file') ||
+				line.startsWith('old mode') ||
+				line.startsWith('new mode') ||
+				line.startsWith('similarity') ||
+				line.startsWith('rename from') ||
+				line.startsWith('rename to') ||
+				line.startsWith('--- ') ||
+				line.startsWith('+++ ')
+			)
+				continue;
 			currentFile.hunks.push(line);
 		}
 		if (currentFile) files.push(currentFile);
@@ -127,7 +136,8 @@
 		{#each parsed.files as file}
 			<div class="file-block">
 				<div class="file-header">{file.header}</div>
-				<pre class="file-diff">{#each file.hunks as line}<span class={lineClass(line)}>{line}</span>{'\n'}{/each}</pre>
+				<pre class="file-diff">{#each file.hunks as line}<span class={lineClass(line)}>{line}</span
+						>{'\n'}{/each}</pre>
 			</div>
 		{/each}
 	{/if}

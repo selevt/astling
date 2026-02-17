@@ -8,52 +8,52 @@ import type { GitBranch, GitCommandResult, BranchDeleteOptions, RecentCommit } f
 const execFileAsync = promisify(execFile);
 
 export class GitService {
-    private repoPath: string;
-    private targetBranch: string;
+	private repoPath: string;
+	private targetBranch: string;
 
-    constructor(repoPath?: string) {
-        // Default to an explicit test subfolder to avoid operating on the app repo itself.
-        // Allow overriding with the GIT_REPO_PATH environment variable or an explicit constructor arg.
-        this.repoPath = repoPath ?? process.env.GIT_REPO_PATH ?? join(process.cwd(), 'test-repo');
-        this.targetBranch = process.env.TARGET_BRANCH ?? 'main';
-    }
+	constructor(repoPath?: string) {
+		// Default to an explicit test subfolder to avoid operating on the app repo itself.
+		// Allow overriding with the GIT_REPO_PATH environment variable or an explicit constructor arg.
+		this.repoPath = repoPath ?? process.env.GIT_REPO_PATH ?? join(process.cwd(), 'test-repo');
+		this.targetBranch = process.env.TARGET_BRANCH ?? 'main';
+	}
 
-    // Public method to validate an arbitrary path (useful for UI validation)
-    async validateRepoPath(path: string): Promise<boolean> {
-        try {
-            await access(join(path, '.git'), constants.F_OK);
-            return true;
-        } catch {
-            return false;
-        }
-    }
+	// Public method to validate an arbitrary path (useful for UI validation)
+	async validateRepoPath(path: string): Promise<boolean> {
+		try {
+			await access(join(path, '.git'), constants.F_OK);
+			return true;
+		} catch {
+			return false;
+		}
+	}
 
-    private async isGitRepo(): Promise<boolean> {
+	private async isGitRepo(): Promise<boolean> {
 		try {
 			await access(join(this.repoPath, '.git'), constants.F_OK);
 			return true;
 		} catch {
 			return false;
 		}
-    }
+	}
 
-    getRepoPath(): string {
-        return this.repoPath;
-    }
+	getRepoPath(): string {
+		return this.repoPath;
+	}
 
-    setRepoPath(path: string) {
-        this.repoPath = path;
-        console.log('GitService repoPath updated to', this.repoPath);
-    }
+	setRepoPath(path: string) {
+		this.repoPath = path;
+		console.log('GitService repoPath updated to', this.repoPath);
+	}
 
-    getTargetBranch(): string {
-        return this.targetBranch;
-    }
+	getTargetBranch(): string {
+		return this.targetBranch;
+	}
 
-    setTargetBranch(branch: string) {
-        this.targetBranch = branch;
-        console.log('GitService targetBranch updated to', this.targetBranch);
-    }
+	setTargetBranch(branch: string) {
+		this.targetBranch = branch;
+		console.log('GitService targetBranch updated to', this.targetBranch);
+	}
 
 	private async execGitCommand(args: string[]): Promise<GitCommandResult> {
 		if (!(await this.isGitRepo())) {
@@ -114,9 +114,15 @@ export class GitService {
 			let stdout = '';
 			let stderr = '';
 
-			proc2.stdout.on('data', (data: Buffer) => { stdout += data.toString(); });
-			proc2.stderr.on('data', (data: Buffer) => { stderr += data.toString(); });
-			proc1.stderr.on('data', (data: Buffer) => { stderr += data.toString(); });
+			proc2.stdout.on('data', (data: Buffer) => {
+				stdout += data.toString();
+			});
+			proc2.stderr.on('data', (data: Buffer) => {
+				stderr += data.toString();
+			});
+			proc1.stderr.on('data', (data: Buffer) => {
+				stderr += data.toString();
+			});
 
 			proc1.on('error', (err) => {
 				resolve({ success: false, output: '', error: err.message });
@@ -137,7 +143,11 @@ export class GitService {
 
 	async getAllBranches(): Promise<GitBranch[]> {
 		// Get all branches with detailed info
-		const result = await this.execGitCommand(['branch', '-vv', '--format=%(refname:short)|%(objectname)|%(subject)|%(authorname)|%(committerdate:iso8601)|%(HEAD)']);
+		const result = await this.execGitCommand([
+			'branch',
+			'-vv',
+			'--format=%(refname:short)|%(objectname)|%(subject)|%(authorname)|%(committerdate:iso8601)|%(HEAD)'
+		]);
 
 		// If the configured path is not a git repository, return empty list instead of throwing
 		if (!result.success) {
@@ -147,7 +157,7 @@ export class GitService {
 			throw new Error(`Failed to get branches: ${result.error}`);
 		}
 
-		const lines = result.output.split('\n').filter(line => line.trim());
+		const lines = result.output.split('\n').filter((line) => line.trim());
 		const branches: GitBranch[] = [];
 
 		for (const line of lines) {
@@ -164,8 +174,8 @@ export class GitService {
 				// Extract clean branch name from rawName
 				// Remove leading '* ' and any trailing tracking info
 				const cleanName = rawName
-					.replace(/^\* /, '')           // Remove current branch marker
-					.replace(/\[.*?\]$/, '')       // Remove [tracking-info]
+					.replace(/^\* /, '') // Remove current branch marker
+					.replace(/\[.*?\]$/, '') // Remove [tracking-info]
 					.trim();
 
 				// Parse tracking info if present
@@ -266,7 +276,9 @@ export class GitService {
 		const result = await this.execGitCommand(args);
 
 		if (!result.success) {
-			throw new Error(`Failed to pull${branchName ? ` branch '${branchName}'` : ''}: ${result.error}`);
+			throw new Error(
+				`Failed to pull${branchName ? ` branch '${branchName}'` : ''}: ${result.error}`
+			);
 		}
 	}
 
@@ -282,7 +294,13 @@ export class GitService {
 	}
 
 	async getRecentCommits(n: number = 3): Promise<RecentCommit[]> {
-		const result = await this.execGitCommand(['log', '--oneline', '-n', String(n), '--format=%h|%s|%ar|%D']);
+		const result = await this.execGitCommand([
+			'log',
+			'--oneline',
+			'-n',
+			String(n),
+			'--format=%h|%s|%ar|%D'
+		]);
 
 		if (!result.success) {
 			return [];
@@ -290,8 +308,8 @@ export class GitService {
 
 		return result.output
 			.split('\n')
-			.filter(line => line.trim())
-			.map(line => {
+			.filter((line) => line.trim())
+			.map((line) => {
 				const [hash, message, relativeDate, refsRaw] = line.split('|');
 				const refs: import('./types').RefBadge[] = [];
 				if (refsRaw?.trim()) {
@@ -330,9 +348,7 @@ export class GitService {
 	 * checkout timestamp, ordered most-recent-first.
 	 */
 	async getCheckoutHistory(): Promise<Array<{ branch: string; date: string }>> {
-		const result = await this.execGitCommand(
-			['reflog', '--format=%gd|%gs', '--date=iso']
-		);
+		const result = await this.execGitCommand(['reflog', '--format=%gd|%gs', '--date=iso']);
 
 		if (!result.success) return [];
 
@@ -396,7 +412,11 @@ export class GitService {
 	}
 
 	async setAutoPrune(enabled: boolean): Promise<void> {
-		const result = await this.execGitCommand(['config', 'remote.origin.prune', enabled ? 'true' : 'false']);
+		const result = await this.execGitCommand([
+			'config',
+			'remote.origin.prune',
+			enabled ? 'true' : 'false'
+		]);
 		if (!result.success) {
 			throw new Error(`Failed to set auto-prune: ${result.error}`);
 		}
@@ -421,9 +441,12 @@ export class GitService {
 		const allResult = await this.execGitCommand(['branch', '--format=%(refname:short)']);
 		if (!allResult.success) return [...triviallyMerged];
 
-		const allBranches = allResult.output.split('\n').map(l => l.trim()).filter(Boolean);
+		const allBranches = allResult.output
+			.split('\n')
+			.map((l) => l.trim())
+			.filter(Boolean);
 		const remaining = allBranches.filter(
-			b => b !== target && b !== currentBranch && !triviallyMerged.has(b)
+			(b) => b !== target && b !== currentBranch && !triviallyMerged.has(b)
 		);
 		if (remaining.length === 0) return [...triviallyMerged];
 
@@ -439,16 +462,25 @@ export class GitService {
 				earliestBase = mb;
 			} else {
 				// Pick the older (more ancestral) merge-base
-				const isAncestor = await this.execGitCommand(['merge-base', '--is-ancestor', mb, earliestBase]);
+				const isAncestor = await this.execGitCommand([
+					'merge-base',
+					'--is-ancestor',
+					mb,
+					earliestBase
+				]);
 				if (isAncestor.success) earliestBase = mb;
 			}
 		}
 
 		if (earliestBase) {
 			// Collect patch-ids for each commit on target since the earliest merge-base
-			const logResult = await this.execGitCommand(['log', '--format=%H', `${earliestBase}..${target}`]);
+			const logResult = await this.execGitCommand([
+				'log',
+				'--format=%H',
+				`${earliestBase}..${target}`
+			]);
 			if (logResult.success) {
-				for (const sha of logResult.output.split('\n').filter(l => l.trim())) {
+				for (const sha of logResult.output.split('\n').filter((l) => l.trim())) {
 					const pidResult = await this.execGitPipeline(
 						['diff', `${sha}^`, sha],
 						['patch-id', '--stable']

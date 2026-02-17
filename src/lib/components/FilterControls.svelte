@@ -1,12 +1,18 @@
 <script lang="ts">
-import { createBranch, getRepoPath, setRepoPath, getTargetBranch, setTargetBranch } from '../../routes/branches/data.remote';
-import { onMount } from 'svelte';
-import Dialog from './Dialog.svelte';
-	
+	import {
+		createBranch,
+		getRepoPath,
+		setRepoPath,
+		getTargetBranch,
+		setTargetBranch
+	} from '../../routes/branches/data.remote';
+	import { onMount } from 'svelte';
+	import Dialog from './Dialog.svelte';
+
 	// Props
-	let { 
-		currentFilter, 
-		searchTerm, 
+	let {
+		currentFilter,
+		searchTerm,
 		sortBy,
 		onFilterChange,
 		onSearchChange,
@@ -25,7 +31,7 @@ import Dialog from './Dialog.svelte';
 		onFindMerged?: () => void;
 		showCreateForm?: boolean;
 	} = $props();
-	
+
 	let newBranchName = $state('');
 	let newBranchStart = $state('HEAD');
 	let isCreating = $state(false);
@@ -38,65 +44,65 @@ import Dialog from './Dialog.svelte';
 	let editingTargetBranch = $state(false);
 	let newTargetBranch = $state('');
 
-    async function refreshRepoInfo() {
-        try {
-            const data = await getRepoPath();
-            repoPathInfo = { path: data.path, valid: data.valid };
-            newRepoPath = repoPathInfo.path ?? '';
-        } catch (err) {
-            console.error('refreshRepoInfo error', err);
-            repoPathInfo = { path: '', valid: false };
-            newRepoPath = '';
-        }
-    }
+	async function refreshRepoInfo() {
+		try {
+			const data = await getRepoPath();
+			repoPathInfo = { path: data.path, valid: data.valid };
+			newRepoPath = repoPathInfo.path ?? '';
+		} catch (err) {
+			console.error('refreshRepoInfo error', err);
+			repoPathInfo = { path: '', valid: false };
+			newRepoPath = '';
+		}
+	}
 
-    // Load initial repo info on mount
-    onMount(async () => {
-        refreshRepoInfo();
-        try {
-            const tb = await getTargetBranch();
-            targetBranch = tb;
-            newTargetBranch = tb;
-            newBranchStart = tb;
-        } catch (err) {
-            console.error('Failed to fetch target branch:', err);
-        }
-    });
+	// Load initial repo info on mount
+	onMount(async () => {
+		refreshRepoInfo();
+		try {
+			const tb = await getTargetBranch();
+			targetBranch = tb;
+			newTargetBranch = tb;
+			newBranchStart = tb;
+		} catch (err) {
+			console.error('Failed to fetch target branch:', err);
+		}
+	});
 
-    async function saveTargetBranch() {
-        try {
-            await setTargetBranch(newTargetBranch.trim());
-            targetBranch = newTargetBranch.trim();
-            editingTargetBranch = false;
-        } catch (err) {
-            alert(`Failed to set target branch: ${err instanceof Error ? err.message : String(err)}`);
-        }
-    }
+	async function saveTargetBranch() {
+		try {
+			await setTargetBranch(newTargetBranch.trim());
+			targetBranch = newTargetBranch.trim();
+			editingTargetBranch = false;
+		} catch (err) {
+			alert(`Failed to set target branch: ${err instanceof Error ? err.message : String(err)}`);
+		}
+	}
 
-    async function saveRepoPath() {
-        try {
-            await setRepoPath(newRepoPath.trim());
-            editingRepoPath = false;
-            await refreshRepoInfo();
-        } catch (err) {
-            alert(`Failed to set repo path: ${err instanceof Error ? err.message : String(err)}`);
-        }
-    }
-	
+	async function saveRepoPath() {
+		try {
+			await setRepoPath(newRepoPath.trim());
+			editingRepoPath = false;
+			await refreshRepoInfo();
+		} catch (err) {
+			alert(`Failed to set repo path: ${err instanceof Error ? err.message : String(err)}`);
+		}
+	}
+
 	const filters = [
 		{ value: 'all', label: 'All Branches', icon: '🌳' },
 		{ value: 'starred', label: 'Starred', icon: '⭐' }
 	];
-	
+
 	const sortOptions = [
 		{ value: 'name', label: 'Name' },
 		{ value: 'recent', label: 'Recently Used' },
 		{ value: 'date', label: 'Last Commit' }
 	];
-	
+
 	async function handleCreateBranch() {
 		if (!newBranchName.trim() || isCreating) return;
-		
+
 		isCreating = true;
 		try {
 			await createBranch({ name: newBranchName.trim(), startPoint: newBranchStart });
@@ -111,49 +117,70 @@ import Dialog from './Dialog.svelte';
 			isCreating = false;
 		}
 	}
-	
 </script>
 
 <div class="controls">
-    <div class="repo-path-row">
-        {#if repoPathInfo !== null}
-            {#if !editingRepoPath}
-                <div class="repo-info">
-                    <small>Repo:</small>
-                    <code class="repo-path">{repoPathInfo?.path ?? ''}</code>
-                    {#if !repoPathInfo?.valid}
-                        <span class="repo-invalid">(not a git repo)</span>
-                    {/if}
-                </div>
-                <div class="repo-actions">
-                    <button class="edit-repo-btn" onclick={() => { editingRepoPath = true; }}>Change</button>
-                </div>
-            {:else}
-                <div class="repo-edit">
-                    <input type="text" bind:value={newRepoPath} class="repo-input" />
-                    <button class="save-repo-btn" onclick={saveRepoPath}>Save</button>
-                    <button class="cancel-repo-btn" onclick={() => { editingRepoPath = false; newRepoPath = repoPathInfo?.path ?? ''; }}>Cancel</button>
-                </div>
-            {/if}
-        {/if}
-    </div>
-    <div class="repo-path-row">
-        {#if !editingTargetBranch}
-            <div class="repo-info">
-                <small>Target:</small>
-                <code class="repo-path">{targetBranch}</code>
-            </div>
-            <div class="repo-actions">
-                <button class="edit-repo-btn" onclick={() => { editingTargetBranch = true; }}>Change</button>
-            </div>
-        {:else}
-            <div class="repo-edit">
-                <input type="text" bind:value={newTargetBranch} class="repo-input" />
-                <button class="save-repo-btn" onclick={saveTargetBranch}>Save</button>
-                <button class="cancel-repo-btn" onclick={() => { editingTargetBranch = false; newTargetBranch = targetBranch; }}>Cancel</button>
-            </div>
-        {/if}
-    </div>
+	<div class="repo-path-row">
+		{#if repoPathInfo !== null}
+			{#if !editingRepoPath}
+				<div class="repo-info">
+					<small>Repo:</small>
+					<code class="repo-path">{repoPathInfo?.path ?? ''}</code>
+					{#if !repoPathInfo?.valid}
+						<span class="repo-invalid">(not a git repo)</span>
+					{/if}
+				</div>
+				<div class="repo-actions">
+					<button
+						class="edit-repo-btn"
+						onclick={() => {
+							editingRepoPath = true;
+						}}>Change</button
+					>
+				</div>
+			{:else}
+				<div class="repo-edit">
+					<input type="text" bind:value={newRepoPath} class="repo-input" />
+					<button class="save-repo-btn" onclick={saveRepoPath}>Save</button>
+					<button
+						class="cancel-repo-btn"
+						onclick={() => {
+							editingRepoPath = false;
+							newRepoPath = repoPathInfo?.path ?? '';
+						}}>Cancel</button
+					>
+				</div>
+			{/if}
+		{/if}
+	</div>
+	<div class="repo-path-row">
+		{#if !editingTargetBranch}
+			<div class="repo-info">
+				<small>Target:</small>
+				<code class="repo-path">{targetBranch}</code>
+			</div>
+			<div class="repo-actions">
+				<button
+					class="edit-repo-btn"
+					onclick={() => {
+						editingTargetBranch = true;
+					}}>Change</button
+				>
+			</div>
+		{:else}
+			<div class="repo-edit">
+				<input type="text" bind:value={newTargetBranch} class="repo-input" />
+				<button class="save-repo-btn" onclick={saveTargetBranch}>Save</button>
+				<button
+					class="cancel-repo-btn"
+					onclick={() => {
+						editingTargetBranch = false;
+						newTargetBranch = targetBranch;
+					}}>Cancel</button
+				>
+			</div>
+		{/if}
+	</div>
 	<div class="filters">
 		{#each filters as filter}
 			<button
@@ -167,7 +194,7 @@ import Dialog from './Dialog.svelte';
 			</button>
 		{/each}
 	</div>
-	
+
 	<div class="search-sort">
 		<div class="search-box">
 			<input
@@ -180,7 +207,7 @@ import Dialog from './Dialog.svelte';
 			/>
 			<span class="search-icon">🔍</span>
 		</div>
-		
+
 		<div class="sort-box">
 			<label for="sort-select" class="sort-label">Sort:</label>
 			<select
@@ -194,7 +221,7 @@ import Dialog from './Dialog.svelte';
 				{/each}
 			</select>
 		</div>
-		
+
 		<button
 			class="find-merged-btn"
 			onclick={() => onFindMerged?.()}
@@ -203,10 +230,7 @@ import Dialog from './Dialog.svelte';
 			🧹 Find Merged
 		</button>
 
-		<button
-			class="create-branch-btn"
-			onclick={() => showCreateForm = !showCreateForm}
-		>
+		<button class="create-branch-btn" onclick={() => (showCreateForm = !showCreateForm)}>
 			➕ New Branch
 		</button>
 	</div>
@@ -214,7 +238,12 @@ import Dialog from './Dialog.svelte';
 
 {#if showCreateForm}
 	<Dialog bind:open={showCreateForm} title="Create New Branch">
-		<form onsubmit={(e) => { e.preventDefault(); handleCreateBranch(); }}>
+		<form
+			onsubmit={(e) => {
+				e.preventDefault();
+				handleCreateBranch();
+			}}
+		>
 			<div class="dialog-form-group">
 				<label for="branch-name">Branch Name:</label>
 				<input
@@ -226,23 +255,19 @@ import Dialog from './Dialog.svelte';
 					class="dialog-input"
 				/>
 			</div>
-			
+
 			<div class="dialog-form-group">
 				<label for="start-point">Start From:</label>
-				<select
-					id="start-point"
-					bind:value={newBranchStart}
-					class="dialog-select"
-				>
+				<select id="start-point" bind:value={newBranchStart} class="dialog-select">
 					<option value={targetBranch}>{targetBranch}</option>
 					<option value="HEAD">HEAD (current commit)</option>
 				</select>
 			</div>
-			
+
 			<div class="dialog-actions">
 				<button
 					type="button"
-					onclick={() => showCreateForm = false}
+					onclick={() => (showCreateForm = false)}
 					class="dialog-btn dialog-btn-cancel"
 				>
 					Cancel
@@ -487,7 +512,8 @@ import Dialog from './Dialog.svelte';
 		box-shadow: 0 0 0 3px var(--color-focus-ring);
 	}
 
-	.save-repo-btn, .cancel-repo-btn {
+	.save-repo-btn,
+	.cancel-repo-btn {
 		padding: 4px 10px;
 		font-size: 12px;
 		border-radius: 6px;

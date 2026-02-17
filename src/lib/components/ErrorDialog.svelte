@@ -31,7 +31,11 @@
 	<div class="error-actions">
 		<button type="button" class="error-btn" onclick={handleClose}>Cancel</button>
 		{#if onResolve}
-			<button type="button" class="error-btn error-btn-discard" onclick={() => handleResolve('discard')}>
+			<button
+				type="button"
+				class="error-btn error-btn-discard"
+				onclick={() => handleResolve('discard')}
+			>
 				Discard Changes
 			</button>
 		{/if}

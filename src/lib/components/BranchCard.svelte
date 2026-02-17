@@ -1,5 +1,11 @@
 <script lang="ts">
-   	import { toggleStar, getBranches, getStarredBranches, getBranch, backupBranch } from '../../routes/branches/data.remote';
+	import {
+		toggleStar,
+		getBranches,
+		getStarredBranches,
+		getBranch,
+		backupBranch
+	} from '../../routes/branches/data.remote';
 	import DescriptionForm from './DescriptionForm.svelte';
 	import RenameForm from './RenameForm.svelte';
 	import type { BranchWithMetadata } from '$lib/server/git/types';
@@ -37,11 +43,11 @@
 	let isBackingUp = $state(false);
 	let showDescription = $state(false);
 	let isLoading = $state(false);
-	
+
 	async function handleCheckout() {
 		onCheckout?.(branch.name);
 	}
-	
+
 	async function handleToggleStar(event: MouseEvent) {
 		event.stopPropagation();
 
@@ -54,19 +60,19 @@
 				getBranch(branch.name)
 			);
 
-		// Update the local branch object with the server result so the UI updates
-		if (result && typeof result.starred === 'boolean') {
-			// Re-assign the branch object so Svelte reactivity picks up the change
-			branch = { ...branch, starred: result.starred };
-			// notify parent to refresh lists that are derived from cached queries
-			onToggleStar?.(branch.name);
-		}
+			// Update the local branch object with the server result so the UI updates
+			if (result && typeof result.starred === 'boolean') {
+				// Re-assign the branch object so Svelte reactivity picks up the change
+				branch = { ...branch, starred: result.starred };
+				// notify parent to refresh lists that are derived from cached queries
+				onToggleStar?.(branch.name);
+			}
 		} catch (error) {
 			console.error('Failed to toggle star:', error);
 			alert(`Failed to toggle star: ${getErrorMessage(error)}`);
 		}
 	}
-	
+
 	function handleDelete(event: MouseEvent) {
 		event.stopPropagation();
 		onDelete?.(branch.name);
@@ -96,15 +102,15 @@
 			isBackingUp = false;
 		}
 	}
-	
+
 	function formatDate(dateString: string | undefined): string {
 		if (!dateString) return 'Never';
-		
+
 		const date = new Date(dateString);
 		const now = new Date();
 		const diffMs = now.getTime() - date.getTime();
 		const diffDays = Math.floor(diffMs / (1000 * 60 * 60 * 24));
-		
+
 		if (diffDays === 0) {
 			const diffHours = Math.floor(diffMs / (1000 * 60 * 60));
 			if (diffHours === 0) {
@@ -120,7 +126,7 @@
 			return date.toLocaleDateString();
 		}
 	}
-	
+
 	function getAheadBehindText(): string {
 		if (branch.ahead && branch.behind) {
 			return `↑${branch.ahead} ↓${branch.behind}`;
@@ -131,24 +137,30 @@
 		}
 		return '';
 	}
-	
+
 	function handleEditDescription() {
 		showDescriptionForm = true;
 	}
-	
+
 	function handleSaveDescription() {
 		showDescriptionForm = false;
 		showDescription = true;
 		onEditComplete?.();
 	}
-	
+
 	function handleCancelDescription() {
 		showDescriptionForm = false;
 		onEditComplete?.();
 	}
 </script>
 
-<div class="branch-card" class:current={branch.current} class:selected data-branch={branch.name} style="view-transition-name: branch-{branch.name.replace(/[^a-zA-Z0-9]/g, '-')}">
+<div
+	class="branch-card"
+	class:current={branch.current}
+	class:selected
+	data-branch={branch.name}
+	style="view-transition-name: branch-{branch.name.replace(/[^a-zA-Z0-9]/g, '-')}"
+>
 	<div class="branch-header">
 		<div class="branch-info">
 			<h3 class="branch-name">
@@ -166,16 +178,16 @@
 			</div>
 		</div>
 		<div class="branch-actions">
-			<button 
-				class="star-btn" 
+			<button
+				class="star-btn"
 				class:starred={branch.starred}
 				onclick={handleToggleStar}
 				title={branch.starred ? 'Unstar branch' : 'Star branch'}
 			>
 				{branch.starred ? '⭐' : '☆'}
 			</button>
-			<button 
-				class="checkout-btn" 
+			<button
+				class="checkout-btn"
 				class:loading={isLoading}
 				class:current={branch.current}
 				onclick={handleCheckout}
@@ -186,12 +198,24 @@
 			</button>
 			<button
 				class="rename-btn"
-				onclick={(e) => { e.stopPropagation(); showRenameForm = true; }}
+				onclick={(e) => {
+					e.stopPropagation();
+					showRenameForm = true;
+				}}
 				title="Rename branch"
 			>
-				<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-					<path d="M17 3a2.85 2.83 0 1 1 4 4L7.5 20.5 2 22l1.5-5.5Z"/>
-					<path d="m15 5 4 4"/>
+				<svg
+					width="14"
+					height="14"
+					viewBox="0 0 24 24"
+					fill="none"
+					stroke="currentColor"
+					stroke-width="2"
+					stroke-linecap="round"
+					stroke-linejoin="round"
+				>
+					<path d="M17 3a2.85 2.83 0 1 1 4 4L7.5 20.5 2 22l1.5-5.5Z" />
+					<path d="m15 5 4 4" />
 				</svg>
 			</button>
 			<button
@@ -200,10 +224,19 @@
 				disabled={isBackingUp}
 				title="Backup branch as patch"
 			>
-				<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-					<path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/>
-					<polyline points="7 10 12 15 17 10"/>
-					<line x1="12" y1="15" x2="12" y2="3"/>
+				<svg
+					width="14"
+					height="14"
+					viewBox="0 0 24 24"
+					fill="none"
+					stroke="currentColor"
+					stroke-width="2"
+					stroke-linecap="round"
+					stroke-linejoin="round"
+				>
+					<path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" />
+					<polyline points="7 10 12 15 17 10" />
+					<line x1="12" y1="15" x2="12" y2="3" />
 				</svg>
 			</button>
 			<button
@@ -216,16 +249,17 @@
 			</button>
 		</div>
 	</div>
-	
+
 	<div class="commit-info">
 		<p class="commit-message">{branch.message}</p>
 		<span class="commit-hash">{branch.hash.slice(0, 8)}</span>
 	</div>
-	
+
 	<div class="description-section">
-		<button 
+		<button
 			class="description-toggle"
-			onclick={() => branch.description ? (showDescription = !showDescription) : handleEditDescription()}
+			onclick={() =>
+				branch.description ? (showDescription = !showDescription) : handleEditDescription()}
 		>
 			📝 {branch.description ? (showDescription ? 'Hide' : 'Edit') : 'Add'} Description
 		</button>
@@ -233,7 +267,7 @@
 			<p class="description">{branch.description}</p>
 		{/if}
 	</div>
-	
+
 	{#if showDescriptionForm}
 		<DescriptionForm
 			branchName={branch.name}
@@ -246,9 +280,15 @@
 	{#if showRenameForm}
 		<RenameForm
 			branchName={branch.name}
-			onSave={() => { showRenameForm = false; onRenameComplete?.(); }}
-			onCancel={() => { showRenameForm = false; onRenameComplete?.(); }}
-			onError={onError}
+			onSave={() => {
+				showRenameForm = false;
+				onRenameComplete?.();
+			}}
+			onCancel={() => {
+				showRenameForm = false;
+				onRenameComplete?.();
+			}}
+			{onError}
 		/>
 	{/if}
 </div>
@@ -329,7 +369,11 @@
 		align-items: center;
 	}
 
-	.star-btn, .checkout-btn, .delete-btn, .rename-btn, .backup-btn {
+	.star-btn,
+	.checkout-btn,
+	.delete-btn,
+	.rename-btn,
+	.backup-btn {
 		padding: 6px 12px;
 		border: 1px solid var(--color-border-input);
 		border-radius: 6px;
@@ -358,7 +402,8 @@
 		padding: 0;
 	}
 
-	.rename-btn:hover, .backup-btn:hover {
+	.rename-btn:hover,
+	.backup-btn:hover {
 		color: var(--color-accent-blue);
 		border-color: var(--color-accent-blue);
 	}
@@ -378,7 +423,9 @@
 		cursor: not-allowed;
 	}
 
-	.star-btn:hover, .checkout-btn:hover, .delete-btn:hover {
+	.star-btn:hover,
+	.checkout-btn:hover,
+	.delete-btn:hover {
 		background: var(--color-bg-hover);
 		border-color: var(--color-border-input);
 	}
@@ -476,7 +523,12 @@
 	}
 
 	@keyframes pulse {
-		0%, 100% { opacity: 1; }
-		50% { opacity: 0.7; }
+		0%,
+		100% {
+			opacity: 1;
+		}
+		50% {
+			opacity: 0.7;
+		}
 	}
 </style>

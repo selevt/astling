@@ -8,56 +8,56 @@ export type CommandResult = { success: true; branch?: string } | { success: fals
 
 // Repo configuration helpers
 export const getRepoPath = query(async () => {
-    try {
-        const path = gitService.getRepoPath();
-        const valid = await gitService.validateRepoPath(path);
-        return { path, valid };
-    } catch (err) {
-        console.error('Failed to get repo path:', err);
-        throw new Error('Failed to get repo path');
-    }
+	try {
+		const path = gitService.getRepoPath();
+		const valid = await gitService.validateRepoPath(path);
+		return { path, valid };
+	} catch (err) {
+		console.error('Failed to get repo path:', err);
+		throw new Error('Failed to get repo path');
+	}
 });
 
 export const setRepoPath = command(
-    v.pipe(v.string(), v.nonEmpty('Repository path is required')),
-    async (path) => {
-        try {
-            const valid = await gitService.validateRepoPath(path);
-            if (!valid) {
-                throw new Error('Path is not a git repository');
-            }
+	v.pipe(v.string(), v.nonEmpty('Repository path is required')),
+	async (path) => {
+		try {
+			const valid = await gitService.validateRepoPath(path);
+			if (!valid) {
+				throw new Error('Path is not a git repository');
+			}
 
-            // Update both services
-            gitService.setRepoPath(path);
-            metadataService.setRepoPath(path);
+			// Update both services
+			gitService.setRepoPath(path);
+			metadataService.setRepoPath(path);
 
-            // Ensure metadata exists and sync branches
-            const rawBranches = await gitService.getAllBranches();
-            await metadataService.mergeWithGitBranches(rawBranches.map(b => b.name));
+			// Ensure metadata exists and sync branches
+			const rawBranches = await gitService.getAllBranches();
+			await metadataService.mergeWithGitBranches(rawBranches.map((b) => b.name));
 
-            // Refresh dependent queries
-            await getBranches().refresh();
-            await getStats().refresh();
+			// Refresh dependent queries
+			await getBranches().refresh();
+			await getStats().refresh();
 
-            return { success: true, path };
-        } catch (error) {
-            console.error('Failed to set repo path:', error);
-            throw new Error(error instanceof Error ? error.message : 'Unknown error');
-        }
-    }
+			return { success: true, path };
+		} catch (error) {
+			console.error('Failed to set repo path:', error);
+			throw new Error(error instanceof Error ? error.message : 'Unknown error');
+		}
+	}
 );
 
 // Target branch configuration
 export const getTargetBranch = query(async () => {
-    return gitService.getTargetBranch();
+	return gitService.getTargetBranch();
 });
 
 export const setTargetBranch = command(
-    v.pipe(v.string(), v.nonEmpty('Target branch is required')),
-    async (branch) => {
-        gitService.setTargetBranch(branch.trim());
-        return { success: true, branch: gitService.getTargetBranch() };
-    }
+	v.pipe(v.string(), v.nonEmpty('Target branch is required')),
+	async (branch) => {
+		gitService.setTargetBranch(branch.trim());
+		return { success: true, branch: gitService.getTargetBranch() };
+	}
 );
 
 // Query to get all branches with their metadata
@@ -90,7 +90,9 @@ export const getBranches = query(async () => {
 		return branches;
 	} catch (error) {
 		console.error('Failed to get branches:', error);
-		throw new Error(`Failed to fetch branches: ${error instanceof Error ? error.message : 'Unknown error'}`);
+		throw new Error(
+			`Failed to fetch branches: ${error instanceof Error ? error.message : 'Unknown error'}`
+		);
 	}
 });
 
@@ -99,7 +101,7 @@ export const getRecentBranches = query(v.optional(v.number(), 10), async (limit 
 	try {
 		const branches = await getBranches();
 		return branches
-			.filter(b => b.lastCheckedOut)
+			.filter((b) => b.lastCheckedOut)
 			.sort((a, b) => {
 				const dateA = new Date(a.lastCheckedOut!).getTime();
 				const dateB = new Date(b.lastCheckedOut!).getTime();
@@ -108,7 +110,9 @@ export const getRecentBranches = query(v.optional(v.number(), 10), async (limit 
 			.slice(0, limit);
 	} catch (error) {
 		console.error('Failed to get recent branches:', error);
-		throw new Error(`Failed to fetch recent branches: ${error instanceof Error ? error.message : 'Unknown error'}`);
+		throw new Error(
+			`Failed to fetch recent branches: ${error instanceof Error ? error.message : 'Unknown error'}`
+		);
 	}
 });
 
@@ -116,10 +120,12 @@ export const getRecentBranches = query(v.optional(v.number(), 10), async (limit 
 export const getStarredBranches = query(async () => {
 	try {
 		const branches = await getBranches();
-		return branches.filter(b => b.starred);
+		return branches.filter((b) => b.starred);
 	} catch (error) {
 		console.error('Failed to get starred branches:', error);
-		throw new Error(`Failed to fetch starred branches: ${error instanceof Error ? error.message : 'Unknown error'}`);
+		throw new Error(
+			`Failed to fetch starred branches: ${error instanceof Error ? error.message : 'Unknown error'}`
+		);
 	}
 });
 
@@ -127,16 +133,18 @@ export const getStarredBranches = query(async () => {
 export const getBranch = query(v.string(), async (branchName) => {
 	try {
 		const branches = await getBranches();
-		const branch = branches.find(b => b.name === branchName);
-		
+		const branch = branches.find((b) => b.name === branchName);
+
 		if (!branch) {
 			throw new Error(`Branch '${branchName}' not found`);
 		}
-		
+
 		return branch;
 	} catch (error) {
 		console.error(`Failed to get branch '${branchName}':`, error);
-		throw new Error(`Failed to fetch branch '${branchName}': ${error instanceof Error ? error.message : 'Unknown error'}`);
+		throw new Error(
+			`Failed to fetch branch '${branchName}': ${error instanceof Error ? error.message : 'Unknown error'}`
+		);
 	}
 });
 
@@ -147,11 +155,13 @@ export const getCurrentBranch = query(async () => {
 		if (!currentBranchName) {
 			throw new Error('No current branch found');
 		}
-		
+
 		return await getBranch(currentBranchName);
 	} catch (error) {
 		console.error('Failed to get current branch:', error);
-		throw new Error(`Failed to fetch current branch: ${error instanceof Error ? error.message : 'Unknown error'}`);
+		throw new Error(
+			`Failed to fetch current branch: ${error instanceof Error ? error.message : 'Unknown error'}`
+		);
 	}
 });
 
@@ -185,17 +195,19 @@ export const createBranch = command(
 		try {
 			await gitService.createBranch(name, startPoint);
 			await metadataService.updateCheckoutDate(name);
-			
+
 			// Refresh queries that depend on branch list
 			await getBranches().refresh();
 			await getStarredBranches().refresh();
 			await getStats().refresh();
 			await getRecentCommits().refresh();
-			
+
 			return { success: true, branch: name };
 		} catch (error) {
 			console.error(`Failed to create branch '${name}':`, error);
-			throw new Error(`Failed to create branch '${name}': ${error instanceof Error ? error.message : 'Unknown error'}`);
+			throw new Error(
+				`Failed to create branch '${name}': ${error instanceof Error ? error.message : 'Unknown error'}`
+			);
 		}
 	}
 );
@@ -204,18 +216,20 @@ export const createBranch = command(
 export const toggleStar = command(v.string(), async (branchName) => {
 	try {
 		const updated = await metadataService.toggleStar(branchName);
-		
-        // Refresh relevant queries
-        // Only refresh the queries that depend on metadata changed. Caller components
-        // can rely on optimistic updates, but keep server cache consistent.
-        await getBranches().refresh();
-        await getStarredBranches().refresh();
-        await getBranch(branchName).refresh();
-		
+
+		// Refresh relevant queries
+		// Only refresh the queries that depend on metadata changed. Caller components
+		// can rely on optimistic updates, but keep server cache consistent.
+		await getBranches().refresh();
+		await getStarredBranches().refresh();
+		await getBranch(branchName).refresh();
+
 		return { success: true, starred: updated.starred };
 	} catch (error) {
 		console.error(`Failed to toggle star for branch '${branchName}':`, error);
-		throw new Error(`Failed to toggle star for branch '${branchName}': ${error instanceof Error ? error.message : 'Unknown error'}`);
+		throw new Error(
+			`Failed to toggle star for branch '${branchName}': ${error instanceof Error ? error.message : 'Unknown error'}`
+		);
 	}
 });
 
@@ -228,15 +242,17 @@ export const updateDescription = command(
 	async ({ branch, description }) => {
 		try {
 			await metadataService.updateDescription(branch, description);
-			
-            // Refresh relevant queries
-            await getBranches().refresh();
-            await getBranch(branch).refresh();
-			
+
+			// Refresh relevant queries
+			await getBranches().refresh();
+			await getBranch(branch).refresh();
+
 			return { success: true, branch, description };
 		} catch (error) {
 			console.error(`Failed to update description for branch '${branch}':`, error);
-			throw new Error(`Failed to update description for branch '${branch}': ${error instanceof Error ? error.message : 'Unknown error'}`);
+			throw new Error(
+				`Failed to update description for branch '${branch}': ${error instanceof Error ? error.message : 'Unknown error'}`
+			);
 		}
 	}
 );
@@ -260,7 +276,9 @@ export const renameBranch = command(
 			return { success: true, oldName, newName };
 		} catch (error) {
 			console.error(`Failed to rename branch '${oldName}' to '${newName}':`, error);
-			throw new Error(`Failed to rename branch: ${error instanceof Error ? error.message : 'Unknown error'}`);
+			throw new Error(
+				`Failed to rename branch: ${error instanceof Error ? error.message : 'Unknown error'}`
+			);
 		}
 	}
 );
@@ -307,8 +325,8 @@ export const getStats = query(async () => {
 	try {
 		const stats = await metadataService.getStats();
 		const branches = await getBranches();
-		const currentBranch = branches.find(b => b.current);
-		
+		const currentBranch = branches.find((b) => b.current);
+
 		return {
 			...stats,
 			totalGitBranches: branches.length,
@@ -316,7 +334,9 @@ export const getStats = query(async () => {
 		};
 	} catch (error) {
 		console.error('Failed to get stats:', error);
-		throw new Error(`Failed to fetch statistics: ${error instanceof Error ? error.message : 'Unknown error'}`);
+		throw new Error(
+			`Failed to fetch statistics: ${error instanceof Error ? error.message : 'Unknown error'}`
+		);
 	}
 });
 
@@ -365,7 +385,9 @@ export const setAutoPrune = command(async () => {
 		return { success: true, pruned };
 	} catch (error) {
 		console.error('Failed to set auto-prune:', error);
-		throw new Error(`Failed to set auto-prune: ${error instanceof Error ? error.message : 'Unknown error'}`);
+		throw new Error(
+			`Failed to set auto-prune: ${error instanceof Error ? error.message : 'Unknown error'}`
+		);
 	}
 });
 
@@ -397,7 +419,9 @@ export const findMergedBranches = query(async () => {
 		return await gitService.findMergedBranches(target);
 	} catch (error) {
 		console.error('Failed to find merged branches:', error);
-		throw new Error(`Failed to find merged branches: ${error instanceof Error ? error.message : 'Unknown error'}`);
+		throw new Error(
+			`Failed to find merged branches: ${error instanceof Error ? error.message : 'Unknown error'}`
+		);
 	}
 });
 
@@ -439,7 +463,9 @@ export const restorePatch = command(
 // Command to delete multiple branches at once
 export const deleteMergedBranches = command(
 	v.array(v.string()),
-	async (branches): Promise<{ deleted: string[]; failed: Array<{ branch: string; error: string }> }> => {
+	async (
+		branches
+	): Promise<{ deleted: string[]; failed: Array<{ branch: string; error: string }> }> => {
 		const deleted: string[] = [];
 		const failed: Array<{ branch: string; error: string }> = [];
 
@@ -466,11 +492,13 @@ export const deleteMergedBranches = command(
 export const pullBranch = command(v.optional(v.string()), async (branchName) => {
 	try {
 		await gitService.pullBranch(branchName);
-		
+
 		return { success: true, branch: branchName || 'current' };
 	} catch (error) {
 		console.error(`Failed to pull branch '${branchName || 'current'}':`, error);
-		throw new Error(`Failed to pull branch '${branchName || 'current'}': ${error instanceof Error ? error.message : 'Unknown error'}`);
+		throw new Error(
+			`Failed to pull branch '${branchName || 'current'}': ${error instanceof Error ? error.message : 'Unknown error'}`
+		);
 	}
 });
 
@@ -483,11 +511,13 @@ export const pushBranch = command(
 	async ({ branch, setUpstream }) => {
 		try {
 			await gitService.pushBranch(branch, setUpstream);
-			
+
 			return { success: true, branch, setUpstream };
 		} catch (error) {
 			console.error(`Failed to push branch '${branch}':`, error);
-			throw new Error(`Failed to push branch '${branch}': ${error instanceof Error ? error.message : 'Unknown error'}`);
+			throw new Error(
+				`Failed to push branch '${branch}': ${error instanceof Error ? error.message : 'Unknown error'}`
+			);
 		}
 	}
 );

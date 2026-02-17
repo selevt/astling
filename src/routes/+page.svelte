@@ -1,277 +1,301 @@
 <script lang="ts">
-  import { getBranches, getStarredBranches, getStats, getRecentCommits, getRepoPath, checkoutBranch, toggleStar, deleteBranch, getStaleBranches, pruneRemote, setAutoPrune, dismissPruneSuggestion, backupBranch, restorePatch } from './branches/data.remote';
-  import BranchCard from '$lib/components/BranchCard.svelte';
-  import FilterControls from '$lib/components/FilterControls.svelte';
-  import ErrorDialog from '$lib/components/ErrorDialog.svelte';
-  import DeleteConfirmDialog from '$lib/components/DeleteConfirmDialog.svelte';
-  import MergedBranchesDialog from '$lib/components/MergedBranchesDialog.svelte';
-  import CommitDetailDialog from '$lib/components/CommitDetailDialog.svelte';
-  import type { BranchWithMetadata, RecentCommit } from '$lib/server/git/types';
-  import { createKeyboardNav } from '$lib/keyboard/handler.svelte';
-  import HelpOverlay from '$lib/keyboard/HelpOverlay.svelte';
-  import faviconUrl from '$lib/assets/favicon.svg';
-  import { invalidateAll } from '$app/navigation';
-  import { tick } from 'svelte';
+	import {
+		getBranches,
+		getStarredBranches,
+		getStats,
+		getRecentCommits,
+		getRepoPath,
+		checkoutBranch,
+		toggleStar,
+		deleteBranch,
+		getStaleBranches,
+		pruneRemote,
+		setAutoPrune,
+		dismissPruneSuggestion,
+		backupBranch,
+		restorePatch
+	} from './branches/data.remote';
+	import BranchCard from '$lib/components/BranchCard.svelte';
+	import FilterControls from '$lib/components/FilterControls.svelte';
+	import ErrorDialog from '$lib/components/ErrorDialog.svelte';
+	import DeleteConfirmDialog from '$lib/components/DeleteConfirmDialog.svelte';
+	import MergedBranchesDialog from '$lib/components/MergedBranchesDialog.svelte';
+	import CommitDetailDialog from '$lib/components/CommitDetailDialog.svelte';
+	import type { BranchWithMetadata, RecentCommit } from '$lib/server/git/types';
+	import { createKeyboardNav } from '$lib/keyboard/handler.svelte';
+	import HelpOverlay from '$lib/keyboard/HelpOverlay.svelte';
+	import faviconUrl from '$lib/assets/favicon.svg';
+	import { invalidateAll } from '$app/navigation';
+	import { tick } from 'svelte';
 
-  function getErrorMessage(err: unknown): string {
-    if (err && typeof err === 'object' && 'message' in err) {
-      return String(err.message);
-    }
-    return String(err);
-  }
+	function getErrorMessage(err: unknown): string {
+		if (err && typeof err === 'object' && 'message' in err) {
+			return String(err.message);
+		}
+		return String(err);
+	}
 
 	// State
-  let filter = $state('all');
-  let searchTerm = $state('');
-  let sortBy = $state('recent');
-  let isLoading = $state(false);
-  let error = $state<string | null>(null);
-  let showCreateForm = $state(false);
-  let editingBranchName = $state<string | null>(null);
-  let renamingBranchName = $state<string | null>(null);
-  let showError = $state(false);
-  let errorMessage = $state('');
-  let showMergedDialog = $state(false);
-  let showDeleteDialog = $state(false);
-  let deleteBranchName = $state('');
-  let deleteError = $state<string | null>(null);
-  let showCommitDialog = $state(false);
-  let selectedCommitHash = $state('');
-  let selectedCommitMessage = $state('');
-  let restoreFileInput: HTMLInputElement;
+	let filter = $state('all');
+	let searchTerm = $state('');
+	let sortBy = $state('recent');
+	let isLoading = $state(false);
+	let error = $state<string | null>(null);
+	let showCreateForm = $state(false);
+	let editingBranchName = $state<string | null>(null);
+	let renamingBranchName = $state<string | null>(null);
+	let showError = $state(false);
+	let errorMessage = $state('');
+	let showMergedDialog = $state(false);
+	let showDeleteDialog = $state(false);
+	let deleteBranchName = $state('');
+	let deleteError = $state<string | null>(null);
+	let showCommitDialog = $state(false);
+	let selectedCommitHash = $state('');
+	let selectedCommitMessage = $state('');
+	let restoreFileInput: HTMLInputElement;
 
-  function showErrorDialog(msg: string) {
-    errorMessage = msg;
-    showError = true;
-  }
+	function showErrorDialog(msg: string) {
+		errorMessage = msg;
+		showError = true;
+	}
 
-  // Remote-derived sources (async-derived)
-  let all = $derived(await getBranches());
-  let starred = $derived(await getStarredBranches());
-  let statsData = $derived(await getStats());
-  let recentCommits = $derived(await getRecentCommits());
-  let pruneInfo = $derived(await getStaleBranches());
-  let isPruning = $state(false);
+	// Remote-derived sources (async-derived)
+	let all = $derived(await getBranches());
+	let starred = $derived(await getStarredBranches());
+	let statsData = $derived(await getStats());
+	let recentCommits = $derived(await getRecentCommits());
+	let pruneInfo = $derived(await getStaleBranches());
+	let isPruning = $state(false);
 
-  // Compose visible branch list as an async-derived signal. Template will
-  // await it where needed.
-  let branchListPlain = $derived.by(() => {
-    const allBranches = all as BranchWithMetadata[] | undefined;
-    const starredBranches = starred as BranchWithMetadata[] | undefined;
+	// Compose visible branch list as an async-derived signal. Template will
+	// await it where needed.
+	let branchListPlain = $derived.by(() => {
+		const allBranches = all as BranchWithMetadata[] | undefined;
+		const starredBranches = starred as BranchWithMetadata[] | undefined;
 
-    let raw: BranchWithMetadata[] = [];
-    switch (filter) {
-      case 'starred':
-        raw = starredBranches || [];
-        break;
-      default:
-        raw = allBranches || [];
-    }
+		let raw: BranchWithMetadata[] = [];
+		switch (filter) {
+			case 'starred':
+				raw = starredBranches || [];
+				break;
+			default:
+				raw = allBranches || [];
+		}
 
-    const term = (searchTerm || '').toLowerCase().trim();
-    if (term) {
-      raw = raw.filter((branch) =>
-        branch.name.toLowerCase().includes(term) ||
-        branch.message.toLowerCase().includes(term) ||
-        branch.author.toLowerCase().includes(term) ||
-        ((branch.description || '').toLowerCase().includes(term))
-      );
-    }
+		const term = (searchTerm || '').toLowerCase().trim();
+		if (term) {
+			raw = raw.filter(
+				(branch) =>
+					branch.name.toLowerCase().includes(term) ||
+					branch.message.toLowerCase().includes(term) ||
+					branch.author.toLowerCase().includes(term) ||
+					(branch.description || '').toLowerCase().includes(term)
+			);
+		}
 
-    raw.sort((a, b) => {
-      switch (sortBy) {
-        case 'name':
-          return a.name.localeCompare(b.name);
-        case 'recent': {
-          const dateA = a.lastCheckedOut ? new Date(a.lastCheckedOut).getTime() : 0;
-          const dateB = b.lastCheckedOut ? new Date(b.lastCheckedOut).getTime() : 0;
-          return dateB - dateA;
-        }
-        case 'date': {
-          const commitDateA = new Date(a.date).getTime();
-          const commitDateB = new Date(b.date).getTime();
-          return commitDateB - commitDateA;
-        }
-        default:
-          return 0;
-      }
-    });
+		raw.sort((a, b) => {
+			switch (sortBy) {
+				case 'name':
+					return a.name.localeCompare(b.name);
+				case 'recent': {
+					const dateA = a.lastCheckedOut ? new Date(a.lastCheckedOut).getTime() : 0;
+					const dateB = b.lastCheckedOut ? new Date(b.lastCheckedOut).getTime() : 0;
+					return dateB - dateA;
+				}
+				case 'date': {
+					const commitDateA = new Date(a.date).getTime();
+					const commitDateB = new Date(b.date).getTime();
+					return commitDateB - commitDateA;
+				}
+				default:
+					return 0;
+			}
+		});
 
-    return raw;
-  });
+		return raw;
+	});
 
-  async function reload() {
-    isLoading = true;
-    const minDelay = new Promise((r) => setTimeout(r, 400));
-    await Promise.all([invalidateAll(), minDelay]);
-    isLoading = false;
-  }
+	async function reload() {
+		isLoading = true;
+		const minDelay = new Promise((r) => setTimeout(r, 400));
+		await Promise.all([invalidateAll(), minDelay]);
+		isLoading = false;
+	}
 
-  function handleFilterChange(newFilter: string) {
-    filter = newFilter;
-  }
+	function handleFilterChange(newFilter: string) {
+		filter = newFilter;
+	}
 
-  function handleSearchChange(newTerm: string) {
-    searchTerm = newTerm;
-  }
+	function handleSearchChange(newTerm: string) {
+		searchTerm = newTerm;
+	}
 
-  function handleSortChange(newSort: string) {
-    sortBy = newSort;
-  }
+	function handleSortChange(newSort: string) {
+		sortBy = newSort;
+	}
 
-  async function handleCheckout(name: string) {
-    const doCheckout = async () => {
-      const result = await checkoutBranch(name);
-      if (!result.success) {
-        showErrorDialog(result.error);
-      }
-      return result.success;
-    };
-	let viewTransition: ReturnType<typeof document.startViewTransition> | null = null;
-    try {
-      if (document.startViewTransition) {
-        viewTransition = document.startViewTransition(async () => {
-          if (await doCheckout()) {
-		    await tick();
-		  } else if (viewTransition?.skipTransition) {
-            viewTransition.skipTransition();
-		  }
-        });
-      } else {
-        await doCheckout();
-      }
-    } catch (err) {
-      console.error('Failed to checkout:', err);
-      showErrorDialog(getErrorMessage(err));
-    }
-  }
+	async function handleCheckout(name: string) {
+		const doCheckout = async () => {
+			const result = await checkoutBranch(name);
+			if (!result.success) {
+				showErrorDialog(result.error);
+			}
+			return result.success;
+		};
+		let viewTransition: ReturnType<typeof document.startViewTransition> | null = null;
+		try {
+			if (document.startViewTransition) {
+				viewTransition = document.startViewTransition(async () => {
+					if (await doCheckout()) {
+						await tick();
+					} else if (viewTransition?.skipTransition) {
+						viewTransition.skipTransition();
+					}
+				});
+			} else {
+				await doCheckout();
+			}
+		} catch (err) {
+			console.error('Failed to checkout:', err);
+			showErrorDialog(getErrorMessage(err));
+		}
+	}
 
-  async function handleToggleStar(name: string) {
-    try {
-      await toggleStar(name).updates(
-        getBranches(),
-        getStarredBranches()
-      );
-    } catch (err) {
-      console.error('Failed to toggle star:', err);
-      showErrorDialog(getErrorMessage(err));
-    }
-  }
+	async function handleToggleStar(name: string) {
+		try {
+			await toggleStar(name).updates(getBranches(), getStarredBranches());
+		} catch (err) {
+			console.error('Failed to toggle star:', err);
+			showErrorDialog(getErrorMessage(err));
+		}
+	}
 
-  function handleDelete(name: string) {
-    deleteBranchName = name;
-    deleteError = null;
-    showDeleteDialog = true;
-  }
+	function handleDelete(name: string) {
+		deleteBranchName = name;
+		deleteError = null;
+		showDeleteDialog = true;
+	}
 
-  async function performDelete(force: boolean) {
-    const name = deleteBranchName;
-    const list = branchListPlain as BranchWithMetadata[];
-    const idx = list.findIndex(b => b.name === name);
-    const result = await deleteBranch({ branch: name, force, remote: false });
-    if (!result.success) {
-      deleteError = result.error;
-      showDeleteDialog = true;
-      return;
-    }
-    showDeleteDialog = false;
-    // Move selection to next branch (or previous if last)
-    if (idx >= 0 && list.length > 1) {
-      const nextIdx = idx < list.length - 1 ? idx + 1 : idx - 1;
-      nav.selectedBranch = list[nextIdx].name;
-    } else {
-      nav.selectedBranch = null;
-    }
-  }
+	async function performDelete(force: boolean) {
+		const name = deleteBranchName;
+		const list = branchListPlain as BranchWithMetadata[];
+		const idx = list.findIndex((b) => b.name === name);
+		const result = await deleteBranch({ branch: name, force, remote: false });
+		if (!result.success) {
+			deleteError = result.error;
+			showDeleteDialog = true;
+			return;
+		}
+		showDeleteDialog = false;
+		// Move selection to next branch (or previous if last)
+		if (idx >= 0 && list.length > 1) {
+			const nextIdx = idx < list.length - 1 ? idx + 1 : idx - 1;
+			nav.selectedBranch = list[nextIdx].name;
+		} else {
+			nav.selectedBranch = null;
+		}
+	}
 
-  async function handlePrune() {
-    isPruning = true;
-    try {
-      await pruneRemote();
-    } catch (err) {
-      showErrorDialog(getErrorMessage(err));
-    } finally {
-      isPruning = false;
-    }
-  }
+	async function handlePrune() {
+		isPruning = true;
+		try {
+			await pruneRemote();
+		} catch (err) {
+			showErrorDialog(getErrorMessage(err));
+		} finally {
+			isPruning = false;
+		}
+	}
 
-  async function handleAutoPrune() {
-    isPruning = true;
-    try {
-      await setAutoPrune();
-    } catch (err) {
-      showErrorDialog(getErrorMessage(err));
-    } finally {
-      isPruning = false;
-    }
-  }
+	async function handleAutoPrune() {
+		isPruning = true;
+		try {
+			await setAutoPrune();
+		} catch (err) {
+			showErrorDialog(getErrorMessage(err));
+		} finally {
+			isPruning = false;
+		}
+	}
 
-  async function handleDismissPrune() {
-    try {
-      await dismissPruneSuggestion();
-    } catch (err) {
-      console.error('Failed to dismiss prune suggestion:', err);
-    }
-  }
+	async function handleDismissPrune() {
+		try {
+			await dismissPruneSuggestion();
+		} catch (err) {
+			console.error('Failed to dismiss prune suggestion:', err);
+		}
+	}
 
-  async function handleBackup(name: string) {
-    try {
-      const result = await backupBranch(name);
-      if (!result.success) {
-        showErrorDialog(result.error);
-        return;
-      }
-      const date = new Date().toISOString().slice(0, 10);
-      const filename = `${name.replace(/\//g, '-')}_${date}.patch`;
-      const blob = new Blob([result.patch || ''], { type: 'text/plain' });
-      const url = URL.createObjectURL(blob);
-      const a = document.createElement('a');
-      a.href = url;
-      a.download = filename;
-      a.click();
-      URL.revokeObjectURL(url);
-    } catch (err) {
-      showErrorDialog(getErrorMessage(err));
-    }
-  }
+	async function handleBackup(name: string) {
+		try {
+			const result = await backupBranch(name);
+			if (!result.success) {
+				showErrorDialog(result.error);
+				return;
+			}
+			const date = new Date().toISOString().slice(0, 10);
+			const filename = `${name.replace(/\//g, '-')}_${date}.patch`;
+			const blob = new Blob([result.patch || ''], { type: 'text/plain' });
+			const url = URL.createObjectURL(blob);
+			const a = document.createElement('a');
+			a.href = url;
+			a.download = filename;
+			a.click();
+			URL.revokeObjectURL(url);
+		} catch (err) {
+			showErrorDialog(getErrorMessage(err));
+		}
+	}
 
-  function handleRestoreClick() {
-    restoreFileInput?.click();
-  }
+	function handleRestoreClick() {
+		restoreFileInput?.click();
+	}
 
-  async function handleRestoreFile(e: Event) {
-    const input = e.target as HTMLInputElement;
-    const file = input.files?.[0];
-    if (!file) return;
-    try {
-      const content = await file.text();
-      const result = await restorePatch(content);
-      if (!result.success) {
-        showErrorDialog(result.error);
-      }
-    } catch (err) {
-      showErrorDialog(getErrorMessage(err));
-    } finally {
-      input.value = '';
-    }
-  }
+	async function handleRestoreFile(e: Event) {
+		const input = e.target as HTMLInputElement;
+		const file = input.files?.[0];
+		if (!file) return;
+		try {
+			const content = await file.text();
+			const result = await restorePatch(content);
+			if (!result.success) {
+				showErrorDialog(result.error);
+			}
+		} catch (err) {
+			showErrorDialog(getErrorMessage(err));
+		} finally {
+			input.value = '';
+		}
+	}
 
-  const nav = createKeyboardNav(
-    () => branchListPlain as BranchWithMetadata[],
-    {
-      setFilter: (f) => { filter = f; },
-      focusSearch: () => document.getElementById('branch-search')?.focus(),
-      checkoutSelected: (b) => { if (!b.current) handleCheckout(b.name); },
-      toggleStarSelected: (b) => handleToggleStar(b.name),
-      deleteSelected: (b) => { if (!b.current) handleDelete(b.name); },
-      refresh: reload,
-      createBranch: () => { showCreateForm = true; },
-      editDescription: (b) => { editingBranchName = b.name; },
-      renameBranch: (b) => { renamingBranchName = b.name; },
-      findMerged: () => { showMergedDialog = true; },
-      backupBranch: (b) => handleBackup(b.name),
-    }
-  );
+	const nav = createKeyboardNav(() => branchListPlain as BranchWithMetadata[], {
+		setFilter: (f) => {
+			filter = f;
+		},
+		focusSearch: () => document.getElementById('branch-search')?.focus(),
+		checkoutSelected: (b) => {
+			if (!b.current) handleCheckout(b.name);
+		},
+		toggleStarSelected: (b) => handleToggleStar(b.name),
+		deleteSelected: (b) => {
+			if (!b.current) handleDelete(b.name);
+		},
+		refresh: reload,
+		createBranch: () => {
+			showCreateForm = true;
+		},
+		editDescription: (b) => {
+			editingBranchName = b.name;
+		},
+		renameBranch: (b) => {
+			renamingBranchName = b.name;
+		},
+		findMerged: () => {
+			showMergedDialog = true;
+		},
+		backupBranch: (b) => handleBackup(b.name)
+	});
 </script>
 
 <svelte:window onkeydown={nav.handleKeydown} />
@@ -292,15 +316,20 @@
 				</div>
 			</div>
 			<div class="header-actions">
-				<button
-					class="restore-btn"
-					onclick={handleRestoreClick}
-					title="Restore patch file"
-				>
-					<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
-						<path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/>
-						<polyline points="17 8 12 3 7 8"/>
-						<line x1="12" y1="3" x2="12" y2="15"/>
+				<button class="restore-btn" onclick={handleRestoreClick} title="Restore patch file">
+					<svg
+						width="16"
+						height="16"
+						viewBox="0 0 24 24"
+						fill="none"
+						stroke="currentColor"
+						stroke-width="1.5"
+						stroke-linecap="round"
+						stroke-linejoin="round"
+					>
+						<path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" />
+						<polyline points="17 8 12 3 7 8" />
+						<line x1="12" y1="3" x2="12" y2="15" />
 					</svg>
 				</button>
 				<input
@@ -310,16 +339,22 @@
 					onchange={handleRestoreFile}
 					style="display:none"
 				/>
-				<button
-					class="refresh-btn"
-					onclick={reload}
-					disabled={isLoading}
-					title="Refresh data"
-				>
-					<svg class="refresh-icon" class:spinning={isLoading} width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
-						<path d="M1.5 8a6.5 6.5 0 0 1 11.25-4.5M14.5 8a6.5 6.5 0 0 1-11.25 4.5"/>
-						<polyline points="13 1 13 4.5 9.5 4.5"/>
-						<polyline points="3 15 3 11.5 6.5 11.5"/>
+				<button class="refresh-btn" onclick={reload} disabled={isLoading} title="Refresh data">
+					<svg
+						class="refresh-icon"
+						class:spinning={isLoading}
+						width="16"
+						height="16"
+						viewBox="0 0 16 16"
+						fill="none"
+						stroke="currentColor"
+						stroke-width="1.5"
+						stroke-linecap="round"
+						stroke-linejoin="round"
+					>
+						<path d="M1.5 8a6.5 6.5 0 0 1 11.25-4.5M14.5 8a6.5 6.5 0 0 1-11.25 4.5" />
+						<polyline points="13 1 13 4.5 9.5 4.5" />
+						<polyline points="3 15 3 11.5 6.5 11.5" />
 					</svg>
 				</button>
 			</div>
@@ -346,10 +381,28 @@
 				{#if recentCommits.length > 0}
 					<div class="branch-commits-list">
 						{#each recentCommits as commit (commit.hash)}
-							<button class="commit-row" type="button" onclick={() => { selectedCommitHash = commit.hash; selectedCommitMessage = commit.message; showCommitDialog = true; }}>
+							<button
+								class="commit-row"
+								type="button"
+								onclick={() => {
+									selectedCommitHash = commit.hash;
+									selectedCommitMessage = commit.message;
+									showCommitDialog = true;
+								}}
+							>
 								<code class="commit-hash">{commit.hash}</code>
 								{#each commit.refs as ref}
-									<span class="ref-badge ref-badge--{ref.type}">{ref.name}{#if ref.synced}<svg class="ref-cloud" viewBox="0 0 24 24" fill="currentColor"><title>on remote</title><path d="M19.35 10.04A7.49 7.49 0 0 0 12 4C9.11 4 6.6 5.64 5.35 8.04A5.994 5.994 0 0 0 0 14c0 3.31 2.69 6 6 6h13c2.76 0 5-2.24 5-5 0-2.64-2.05-4.78-4.65-4.96z" opacity="0.55"/></svg>{/if}</span>
+									<span class="ref-badge ref-badge--{ref.type}"
+										>{ref.name}{#if ref.synced}<svg
+												class="ref-cloud"
+												viewBox="0 0 24 24"
+												fill="currentColor"
+												><title>on remote</title><path
+													d="M19.35 10.04A7.49 7.49 0 0 0 12 4C9.11 4 6.6 5.64 5.35 8.04A5.994 5.994 0 0 0 0 14c0 3.31 2.69 6 6 6h13c2.76 0 5-2.24 5-5 0-2.64-2.05-4.78-4.65-4.96z"
+													opacity="0.55"
+												/></svg
+											>{/if}</span
+									>
 								{/each}
 								<span class="commit-message">{commit.message}</span>
 								<span class="commit-date">{commit.relativeDate}</span>
@@ -365,13 +418,20 @@
 		<section class="prune-banner">
 			<div class="prune-content">
 				<div class="prune-text">
-					<strong>{pruneInfo.staleRefs.length}</strong> stale remote tracking reference{pruneInfo.staleRefs.length === 1 ? '' : 's'}
+					<strong>{pruneInfo.staleRefs.length}</strong> stale remote tracking reference{pruneInfo
+						.staleRefs.length === 1
+						? ''
+						: 's'}
 				</div>
 				<div class="prune-actions">
 					<button class="prune-btn prune-btn-primary" onclick={handlePrune} disabled={isPruning}>
 						{isPruning ? 'Pruning...' : 'Prune now'}
 					</button>
-					<button class="prune-btn prune-btn-secondary" onclick={handleAutoPrune} disabled={isPruning}>
+					<button
+						class="prune-btn prune-btn-secondary"
+						onclick={handleAutoPrune}
+						disabled={isPruning}
+					>
 						Enable auto-prune
 					</button>
 					<button class="prune-btn prune-btn-dismiss" onclick={handleDismissPrune}>
@@ -385,12 +445,12 @@
 	<section class="main-content">
 		<FilterControls
 			currentFilter={filter}
-			searchTerm={searchTerm}
-			sortBy={sortBy}
+			{searchTerm}
+			{sortBy}
 			onFilterChange={handleFilterChange}
 			onSearchChange={handleSearchChange}
 			onSortChange={handleSortChange}
-			onFindMerged={() => showMergedDialog = true}
+			onFindMerged={() => (showMergedDialog = true)}
 			bind:showCreateForm
 		/>
 
@@ -402,10 +462,20 @@
 			</div>
 		{:else if isLoading}
 			<div class="loading-state">
-				<svg class="loading-spinner" width="32" height="32" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
-					<path d="M1.5 8a6.5 6.5 0 0 1 11.25-4.5M14.5 8a6.5 6.5 0 0 1-11.25 4.5"/>
-					<polyline points="13 1 13 4.5 9.5 4.5"/>
-					<polyline points="3 15 3 11.5 6.5 11.5"/>
+				<svg
+					class="loading-spinner"
+					width="32"
+					height="32"
+					viewBox="0 0 16 16"
+					fill="none"
+					stroke="currentColor"
+					stroke-width="1.5"
+					stroke-linecap="round"
+					stroke-linejoin="round"
+				>
+					<path d="M1.5 8a6.5 6.5 0 0 1 11.25-4.5M14.5 8a6.5 6.5 0 0 1-11.25 4.5" />
+					<polyline points="13 1 13 4.5 9.5 4.5" />
+					<polyline points="3 15 3 11.5 6.5 11.5" />
 				</svg>
 				<h3>Loading branches...</h3>
 			</div>
@@ -413,51 +483,58 @@
 			<div class="results-header">
 				<h2>
 					{#if filter === 'starred'}
-					  Starred Branches
+						Starred Branches
 					{:else}
-					  All Branches
+						All Branches
 					{/if}
 				</h2>
-                <p class="results-count">
-                    {(branchListPlain as BranchWithMetadata[]).length} branch{(branchListPlain as BranchWithMetadata[]).length === 1 ? '' : 'es'}
-                    {searchTerm && ` matching "${searchTerm}"`}
-                </p>
+				<p class="results-count">
+					{(branchListPlain as BranchWithMetadata[]).length} branch{(
+						branchListPlain as BranchWithMetadata[]
+					).length === 1
+						? ''
+						: 'es'}
+					{searchTerm && ` matching "${searchTerm}"`}
+				</p>
 			</div>
 
-            {#if (branchListPlain as BranchWithMetadata[]).length === 0}
+			{#if (branchListPlain as BranchWithMetadata[]).length === 0}
 				<div class="empty-state">
 					<div class="empty-icon">🌱</div>
 					<h3>No branches found</h3>
 					<p>
-						{searchTerm 
+						{searchTerm
 							? `No branches match your search for "${searchTerm}"`
 							: filter === 'starred'
-							? 'No starred branches yet'
-							: 'No branches found'
-						}
+								? 'No starred branches yet'
+								: 'No branches found'}
 					</p>
-                    {#if searchTerm}
-                        <button onclick={() => { searchTerm = ''; /* branchList is derived so no explicit load needed */ }}>Clear Search</button>
-                    {/if}
+					{#if searchTerm}
+						<button
+							onclick={() => {
+								searchTerm = ''; /* branchList is derived so no explicit load needed */
+							}}>Clear Search</button
+						>
+					{/if}
 				</div>
-                {:else}
-                <div class="branches-list">
-                    {#each (branchListPlain as BranchWithMetadata[]) as branch (branch.name)}
-                        <BranchCard
-                          {branch}
-                          selected={nav.selectedBranch === branch.name}
-                          onCheckout={handleCheckout}
-                          onToggleStar={handleToggleStar}
-                          onDelete={(name) => handleDelete(name)}
-                          showDescriptionForm={editingBranchName === branch.name}
-                          onEditComplete={() => editingBranchName = null}
-                          showRenameForm={renamingBranchName === branch.name}
-                          onRenameComplete={() => renamingBranchName = null}
-                          onError={showErrorDialog}
-                        />
-                    {/each}
-                </div>
-            {/if}
+			{:else}
+				<div class="branches-list">
+					{#each branchListPlain as BranchWithMetadata[] as branch (branch.name)}
+						<BranchCard
+							{branch}
+							selected={nav.selectedBranch === branch.name}
+							onCheckout={handleCheckout}
+							onToggleStar={handleToggleStar}
+							onDelete={(name) => handleDelete(name)}
+							showDescriptionForm={editingBranchName === branch.name}
+							onEditComplete={() => (editingBranchName = null)}
+							showRenameForm={renamingBranchName === branch.name}
+							onRenameComplete={() => (renamingBranchName = null)}
+							onError={showErrorDialog}
+						/>
+					{/each}
+				</div>
+			{/if}
 		{/if}
 	</section>
 </div>
@@ -467,7 +544,7 @@
 {/if}
 
 {#if nav.showHelp}
-	<HelpOverlay onClose={() => nav.showHelp = false} />
+	<HelpOverlay onClose={() => (nav.showHelp = false)} />
 {/if}
 
 {#if showError}
@@ -481,7 +558,7 @@
 		errorMessage={deleteError}
 		onConfirm={() => performDelete(false)}
 		onForceDelete={() => performDelete(true)}
-		onCancel={() => showDeleteDialog = false}
+		onCancel={() => (showDeleteDialog = false)}
 	/>
 {/if}
 
@@ -490,7 +567,11 @@
 {/if}
 
 {#if showCommitDialog}
-	<CommitDetailDialog bind:open={showCommitDialog} hash={selectedCommitHash} message={selectedCommitMessage} />
+	<CommitDetailDialog
+		bind:open={showCommitDialog}
+		hash={selectedCommitHash}
+		message={selectedCommitMessage}
+	/>
 {/if}
 
 <style>
@@ -544,7 +625,8 @@
 		align-items: center;
 	}
 
-	.refresh-btn, .restore-btn {
+	.refresh-btn,
+	.restore-btn {
 		padding: 8px;
 		background: transparent;
 		color: var(--color-text-secondary);
@@ -557,7 +639,8 @@
 		justify-content: center;
 	}
 
-	.refresh-btn:hover:not(:disabled), .restore-btn:hover {
+	.refresh-btn:hover:not(:disabled),
+	.restore-btn:hover {
 		color: var(--color-text-primary);
 		border-color: var(--color-border-input);
 		background: var(--color-bg-hover);
@@ -573,7 +656,9 @@
 	}
 
 	@keyframes spin {
-		to { transform: rotate(360deg); }
+		to {
+			transform: rotate(360deg);
+		}
 	}
 
 	.stats-section {
@@ -708,8 +793,12 @@
 	}
 
 	@keyframes spin {
-		from { transform: rotate(0deg); }
-		to { transform: rotate(360deg); }
+		from {
+			transform: rotate(0deg);
+		}
+		to {
+			transform: rotate(360deg);
+		}
 	}
 
 	.branch-commits-card {
@@ -936,5 +1025,4 @@
 		box-shadow: 0 2px 8px var(--color-shadow);
 		z-index: 900;
 	}
-
 </style>
