@@ -1,5 +1,5 @@
 <script lang="ts">
-  	import { checkoutBranch, toggleStar, getBranches, getStarredBranches, getBranch, backupBranch } from '../../routes/branches/data.remote';
+   	import { toggleStar, getBranches, getStarredBranches, getBranch, backupBranch } from '../../routes/branches/data.remote';
 	import DescriptionForm from './DescriptionForm.svelte';
 	import RenameForm from './RenameForm.svelte';
 	import type { BranchWithMetadata } from '$lib/server/git/types';
@@ -39,23 +39,7 @@
 	let isLoading = $state(false);
 	
 	async function handleCheckout() {
-		if (isLoading) return;
-		isLoading = true;
-
-		try {
-			const result = await checkoutBranch(branch.name);
-			if (!result.success) {
-				onError?.(result.error);
-				onCheckout?.(branch.name);
-				return;
-			}
-			onCheckout?.(branch.name);
-		} catch (error) {
-			console.error('Failed to checkout:', error);
-			onError?.(getErrorMessage(error));
-		} finally {
-			isLoading = false;
-		}
+		onCheckout?.(branch.name);
 	}
 	
 	async function handleToggleStar(event: MouseEvent) {
