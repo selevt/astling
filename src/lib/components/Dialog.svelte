@@ -32,20 +32,7 @@
     }
   });
 
-  function handleCancel(e: Event) {
-    e.preventDefault();
-    open = false;
-    onClose?.();
-  }
-
-  function handleClose(e: Event) {
-    if (e.target === dialogEl) {
-      open = false;
-      onClose?.();
-    }
-  }
-
-  function handleCloseButton() {
+  function handleClose() {
     open = false;
     onClose?.();
   }
@@ -53,15 +40,15 @@
 
 <dialog
   bind:this={dialogEl}
-  oncancel={handleCancel}
-  onclick={handleClose}
+  onclose={handleClose}
+  closedby="any"
   class="dialog"
 >
   <div class="dialog-content">
     {#if title}
       <header class="dialog-header">
         <h3>{title}</h3>
-        <button type="button" class="dialog-close" onclick={handleCloseButton}>✕</button>
+        <button type="button" class="dialog-close" onclick={() => dialogEl?.close()}>✕</button>
       </header>
     {/if}
     <div class="dialog-body">

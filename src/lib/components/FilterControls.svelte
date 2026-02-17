@@ -112,25 +112,6 @@ import Dialog from './Dialog.svelte';
 		}
 	}
 	
-	function handleKeyPress(event: KeyboardEvent) {
-		if (event.key === 'Escape') {
-			showCreateForm = false;
-			newBranchName = '';
-			newBranchStart = targetBranch;
-		}
-	}
-	
-	$effect(() => {
-		if (showCreateForm) {
-			document.addEventListener('keydown', handleKeyPress);
-		} else {
-			document.removeEventListener('keydown', handleKeyPress);
-		}
-		
-		return () => {
-			document.removeEventListener('keydown', handleKeyPress);
-		};
-	});
 </script>
 
 <div class="controls">

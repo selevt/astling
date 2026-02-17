@@ -205,6 +205,8 @@ export function createKeyboardNav(
 				break;
 			}
 			case 'Escape':
+				// Let open dialogs handle Escape natively
+				if (document.querySelector('dialog[open]')) return;
 				e.preventDefault();
 				// Cascading dismiss
 				if (showHelp) {
