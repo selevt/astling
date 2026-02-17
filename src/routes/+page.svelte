@@ -5,6 +5,7 @@
   import ErrorDialog from '$lib/components/ErrorDialog.svelte';
   import DeleteConfirmDialog from '$lib/components/DeleteConfirmDialog.svelte';
   import MergedBranchesDialog from '$lib/components/MergedBranchesDialog.svelte';
+  import CommitDetailDialog from '$lib/components/CommitDetailDialog.svelte';
   import type { BranchWithMetadata, RecentCommit } from '$lib/server/git/types';
   import { createKeyboardNav } from '$lib/keyboard/handler.svelte';
   import HelpOverlay from '$lib/keyboard/HelpOverlay.svelte';
@@ -33,6 +34,9 @@
   let showDeleteDialog = $state(false);
   let deleteBranchName = $state('');
   let deleteError = $state<string | null>(null);
+  let showCommitDialog = $state(false);
+  let selectedCommitHash = $state('');
+  let selectedCommitMessage = $state('');
 
   function showErrorDialog(msg: string) {
     errorMessage = msg;
@@ -265,14 +269,14 @@
 				{#if recentCommits.length > 0}
 					<div class="branch-commits-list">
 						{#each recentCommits as commit (commit.hash)}
-							<div class="commit-row">
+							<button class="commit-row" type="button" onclick={() => { selectedCommitHash = commit.hash; selectedCommitMessage = commit.message; showCommitDialog = true; }}>
 								<code class="commit-hash">{commit.hash}</code>
 								{#each commit.refs as ref}
 									<span class="ref-badge ref-badge--{ref.type}">{ref.name}{#if ref.synced}<svg class="ref-cloud" viewBox="0 0 24 24" fill="currentColor"><title>on remote</title><path d="M19.35 10.04A7.49 7.49 0 0 0 12 4C9.11 4 6.6 5.64 5.35 8.04A5.994 5.994 0 0 0 0 14c0 3.31 2.69 6 6 6h13c2.76 0 5-2.24 5-5 0-2.64-2.05-4.78-4.65-4.96z" opacity="0.55"/></svg>{/if}</span>
 								{/each}
 								<span class="commit-message">{commit.message}</span>
 								<span class="commit-date">{commit.relativeDate}</span>
-							</div>
+							</button>
 						{/each}
 					</div>
 				{/if}
@@ -406,6 +410,10 @@
 
 {#if showMergedDialog}
 	<MergedBranchesDialog bind:open={showMergedDialog} onComplete={reload} />
+{/if}
+
+{#if showCommitDialog}
+	<CommitDetailDialog bind:open={showCommitDialog} hash={selectedCommitHash} message={selectedCommitMessage} />
 {/if}
 
 <style>
@@ -661,12 +669,25 @@
 		display: flex;
 		align-items: center;
 		gap: 12px;
-		padding: 6px 0;
+		padding: 6px 4px;
 		font-size: 14px;
+		width: 100%;
+		background: none;
+		border: none;
+		color: inherit;
+		text-align: left;
+		cursor: pointer;
+		border-radius: 4px;
+		transition: background 0.15s ease;
+	}
+
+	.commit-row:hover {
+		background: var(--color-bg-hover);
 	}
 
 	.commit-row:not(:last-child) {
 		border-bottom: 1px solid var(--color-border);
+		border-radius: 0;
 		padding-bottom: 6px;
 	}
 

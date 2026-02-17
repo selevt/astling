@@ -483,6 +483,20 @@ export class GitService {
 		return merged;
 	}
 
+	async getCommitDiff(hash: string): Promise<string> {
+		if (!/^[0-9a-f]+$/i.test(hash)) {
+			throw new Error('Invalid commit hash');
+		}
+
+		const result = await this.execGitCommand(['show', '--stat', '--patch', hash]);
+
+		if (!result.success) {
+			throw new Error(`Failed to get commit diff: ${result.error}`);
+		}
+
+		return result.output;
+	}
+
 	async getRepositoryStatus(): Promise<any> {
 		const result = await this.execGitCommand(['status', '--porcelain=2']);
 

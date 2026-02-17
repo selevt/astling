@@ -376,6 +376,20 @@ export const dismissPruneSuggestion = command(async () => {
 	return { success: true };
 });
 
+// Command to get the diff for a single commit
+export const getCommitDiff = command(
+	v.pipe(v.string(), v.regex(/^[0-9a-f]+$/i, 'Invalid commit hash')),
+	async (hash) => {
+		try {
+			const diff = await gitService.getCommitDiff(hash);
+			return { success: true as const, diff };
+		} catch (error) {
+			const message = error instanceof Error ? error.message : String(error);
+			return { success: false as const, error: message };
+		}
+	}
+);
+
 // Query to find branches fully merged into the target branch (on-demand, expensive)
 export const findMergedBranches = query(async () => {
 	try {
