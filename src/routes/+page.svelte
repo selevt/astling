@@ -11,6 +11,7 @@
   import HelpOverlay from '$lib/keyboard/HelpOverlay.svelte';
   import faviconUrl from '$lib/assets/favicon.svg';
   import { invalidateAll } from '$app/navigation';
+  import { tick } from 'svelte';
 
   function getErrorMessage(err: unknown): string {
     if (err && typeof err === 'object' && 'message' in err) {
@@ -119,11 +120,21 @@
   }
 
   async function handleCheckout(name: string) {
-    try {
+    const doCheckout = async () => {
       const result = await checkoutBranch(name);
       if (!result.success) {
         showErrorDialog(result.error);
         return;
+      }
+    };
+    try {
+      if (document.startViewTransition) {
+        document.startViewTransition(async () => {
+          await doCheckout();
+		  await tick();
+        });
+      } else {
+        await doCheckout();
       }
     } catch (err) {
       console.error('Failed to checkout:', err);

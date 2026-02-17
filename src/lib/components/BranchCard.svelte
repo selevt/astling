@@ -164,7 +164,7 @@
 	}
 </script>
 
-<div class="branch-card" class:current={branch.current} class:selected data-branch={branch.name}>
+<div class="branch-card" class:current={branch.current} class:selected data-branch={branch.name} style="view-transition-name: branch-{branch.name.replace(/[^a-zA-Z0-9]/g, '-')}">
 	<div class="branch-header">
 		<div class="branch-info">
 			<h3 class="branch-name">
