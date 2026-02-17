@@ -1,5 +1,5 @@
 <script lang="ts">
-  	import { checkoutBranch, toggleStar, getBranches, getStarredBranches, getBranch } from '../../routes/branches/data.remote';
+  	import { checkoutBranch, toggleStar, getBranches, getStarredBranches, getBranch, backupBranch } from '../../routes/branches/data.remote';
 	import DescriptionForm from './DescriptionForm.svelte';
 	import RenameForm from './RenameForm.svelte';
 	import type { BranchWithMetadata } from '$lib/server/git/types';
@@ -34,6 +34,7 @@
 		showDescriptionForm?: boolean;
 		showRenameForm?: boolean;
 	} = $props();
+	let isBackingUp = $state(false);
 	let showDescription = $state(false);
 	let isLoading = $state(false);
 	
@@ -85,6 +86,31 @@
 	function handleDelete(event: MouseEvent) {
 		event.stopPropagation();
 		onDelete?.(branch.name);
+	}
+
+	async function handleBackup() {
+		if (isBackingUp) return;
+		isBackingUp = true;
+		try {
+			const result = await backupBranch(branch.name);
+			if (!result.success) {
+				onError?.(result.error);
+				return;
+			}
+			const date = new Date().toISOString().slice(0, 10);
+			const filename = `${branch.name.replace(/\//g, '-')}_${date}.patch`;
+			const blob = new Blob([result.patch || ''], { type: 'text/plain' });
+			const url = URL.createObjectURL(blob);
+			const a = document.createElement('a');
+			a.href = url;
+			a.download = filename;
+			a.click();
+			URL.revokeObjectURL(url);
+		} catch (error) {
+			onError?.(getErrorMessage(error));
+		} finally {
+			isBackingUp = false;
+		}
 	}
 	
 	function formatDate(dateString: string | undefined): string {
@@ -182,6 +208,18 @@
 				<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
 					<path d="M17 3a2.85 2.83 0 1 1 4 4L7.5 20.5 2 22l1.5-5.5Z"/>
 					<path d="m15 5 4 4"/>
+				</svg>
+			</button>
+			<button
+				class="backup-btn"
+				onclick={handleBackup}
+				disabled={isBackingUp}
+				title="Backup branch as patch"
+			>
+				<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+					<path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/>
+					<polyline points="7 10 12 15 17 10"/>
+					<line x1="12" y1="15" x2="12" y2="3"/>
 				</svg>
 			</button>
 			<button
@@ -307,7 +345,7 @@
 		align-items: center;
 	}
 
-	.star-btn, .checkout-btn, .delete-btn, .rename-btn {
+	.star-btn, .checkout-btn, .delete-btn, .rename-btn, .backup-btn {
 		padding: 6px 12px;
 		border: 1px solid var(--color-border-input);
 		border-radius: 6px;
@@ -336,9 +374,24 @@
 		padding: 0;
 	}
 
-	.rename-btn:hover {
+	.rename-btn:hover, .backup-btn:hover {
 		color: var(--color-accent-blue);
 		border-color: var(--color-accent-blue);
+	}
+
+	.backup-btn {
+		color: var(--color-text-secondary);
+		display: flex;
+		align-items: center;
+		justify-content: center;
+		width: 32px;
+		height: 32px;
+		padding: 0;
+	}
+
+	.backup-btn:disabled {
+		opacity: 0.5;
+		cursor: not-allowed;
 	}
 
 	.star-btn:hover, .checkout-btn:hover, .delete-btn:hover {

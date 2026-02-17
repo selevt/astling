@@ -1,5 +1,5 @@
 <script lang="ts">
-  import { getBranches, getStarredBranches, getStats, getRecentCommits, getRepoPath, checkoutBranch, toggleStar, deleteBranch, getStaleBranches, pruneRemote, setAutoPrune, dismissPruneSuggestion } from './branches/data.remote';
+  import { getBranches, getStarredBranches, getStats, getRecentCommits, getRepoPath, checkoutBranch, toggleStar, deleteBranch, getStaleBranches, pruneRemote, setAutoPrune, dismissPruneSuggestion, backupBranch, restorePatch } from './branches/data.remote';
   import BranchCard from '$lib/components/BranchCard.svelte';
   import FilterControls from '$lib/components/FilterControls.svelte';
   import ErrorDialog from '$lib/components/ErrorDialog.svelte';
@@ -37,6 +37,7 @@
   let showCommitDialog = $state(false);
   let selectedCommitHash = $state('');
   let selectedCommitMessage = $state('');
+  let restoreFileInput: HTMLInputElement;
 
   function showErrorDialog(msg: string) {
     errorMessage = msg;
@@ -198,6 +199,48 @@
     }
   }
 
+  async function handleBackup(name: string) {
+    try {
+      const result = await backupBranch(name);
+      if (!result.success) {
+        showErrorDialog(result.error);
+        return;
+      }
+      const date = new Date().toISOString().slice(0, 10);
+      const filename = `${name.replace(/\//g, '-')}_${date}.patch`;
+      const blob = new Blob([result.patch || ''], { type: 'text/plain' });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = filename;
+      a.click();
+      URL.revokeObjectURL(url);
+    } catch (err) {
+      showErrorDialog(getErrorMessage(err));
+    }
+  }
+
+  function handleRestoreClick() {
+    restoreFileInput?.click();
+  }
+
+  async function handleRestoreFile(e: Event) {
+    const input = e.target as HTMLInputElement;
+    const file = input.files?.[0];
+    if (!file) return;
+    try {
+      const content = await file.text();
+      const result = await restorePatch(content);
+      if (!result.success) {
+        showErrorDialog(result.error);
+      }
+    } catch (err) {
+      showErrorDialog(getErrorMessage(err));
+    } finally {
+      input.value = '';
+    }
+  }
+
   const nav = createKeyboardNav(
     () => branchListPlain as BranchWithMetadata[],
     {
@@ -211,6 +254,7 @@
       editDescription: (b) => { editingBranchName = b.name; },
       renameBranch: (b) => { renamingBranchName = b.name; },
       findMerged: () => { showMergedDialog = true; },
+      backupBranch: (b) => handleBackup(b.name),
     }
   );
 </script>
@@ -233,6 +277,24 @@
 				</div>
 			</div>
 			<div class="header-actions">
+				<button
+					class="restore-btn"
+					onclick={handleRestoreClick}
+					title="Restore patch file"
+				>
+					<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
+						<path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/>
+						<polyline points="17 8 12 3 7 8"/>
+						<line x1="12" y1="3" x2="12" y2="15"/>
+					</svg>
+				</button>
+				<input
+					bind:this={restoreFileInput}
+					type="file"
+					accept=".patch,.diff"
+					onchange={handleRestoreFile}
+					style="display:none"
+				/>
 				<button
 					class="refresh-btn"
 					onclick={reload}
@@ -461,7 +523,13 @@
 		font-size: 14px;
 	}
 
-	.refresh-btn {
+	.header-actions {
+		display: flex;
+		gap: 8px;
+		align-items: center;
+	}
+
+	.refresh-btn, .restore-btn {
 		padding: 8px;
 		background: transparent;
 		color: var(--color-text-secondary);
@@ -474,7 +542,7 @@
 		justify-content: center;
 	}
 
-	.refresh-btn:hover:not(:disabled) {
+	.refresh-btn:hover:not(:disabled), .restore-btn:hover {
 		color: var(--color-text-primary);
 		border-color: var(--color-border-input);
 		background: var(--color-bg-hover);

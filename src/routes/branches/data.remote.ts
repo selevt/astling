@@ -401,6 +401,41 @@ export const findMergedBranches = query(async () => {
 	}
 });
 
+// Command to backup a branch as a patch (diff vs target branch)
+export const backupBranch = command(
+	v.pipe(v.string(), v.nonEmpty('Branch name is required')),
+	async (branchName) => {
+		try {
+			const result = await gitService.getBranchDiff(branchName);
+			if (!result.success) {
+				return { success: false as const, error: result.error || 'Failed to generate diff' };
+			}
+			return { success: true as const, patch: result.output };
+		} catch (error) {
+			const message = error instanceof Error ? error.message : String(error);
+			return { success: false as const, error: message };
+		}
+	}
+);
+
+// Command to restore a patch file onto the current branch
+export const restorePatch = command(
+	v.pipe(v.string(), v.nonEmpty('Patch content is required')),
+	async (patchContent) => {
+		try {
+			const result = await gitService.applyPatch(patchContent);
+			if (!result.success) {
+				return { success: false as const, error: result.error || 'Failed to apply patch' };
+			}
+			await getBranches().refresh();
+			return { success: true as const };
+		} catch (error) {
+			const message = error instanceof Error ? error.message : String(error);
+			return { success: false as const, error: message };
+		}
+	}
+);
+
 // Command to delete multiple branches at once
 export const deleteMergedBranches = command(
 	v.array(v.string()),

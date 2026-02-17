@@ -1,7 +1,8 @@
 import { execFile, spawn } from 'child_process';
 import { promisify } from 'util';
 import { join } from 'path';
-import { access, constants } from 'fs/promises';
+import { access, constants, writeFile, unlink } from 'fs/promises';
+import { tmpdir } from 'os';
 import type { GitBranch, GitCommandResult, BranchDeleteOptions, RecentCommit } from './types';
 
 const execFileAsync = promisify(execFile);
@@ -505,6 +506,35 @@ export class GitService {
 		}
 
 		return result.output;
+	}
+
+	async getBranchDiff(branchName: string): Promise<GitCommandResult> {
+		if (!(await this.isGitRepo())) {
+			return { success: false, output: '', error: 'Not a git repository' };
+		}
+
+		try {
+			const args = ['diff', `${this.targetBranch}...${branchName}`];
+			const { stdout, stderr } = await execFileAsync('git', args, {
+				cwd: this.repoPath,
+				timeout: 15000,
+				maxBuffer: 50 * 1024 * 1024
+			});
+			// Preserve raw output — trimming corrupts patch format
+			return { success: true, output: stdout, error: stderr.trim() || undefined };
+		} catch (error: any) {
+			return { success: false, output: '', error: error.message || 'Unknown error' };
+		}
+	}
+
+	async applyPatch(patchContent: string): Promise<GitCommandResult> {
+		const tempPath = join(tmpdir(), `astling-patch-${Date.now()}.patch`);
+		try {
+			await writeFile(tempPath, patchContent, 'utf-8');
+			return await this.execGitCommand(['apply', tempPath]);
+		} finally {
+			await unlink(tempPath).catch(() => {});
+		}
 	}
 }
 
