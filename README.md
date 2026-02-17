@@ -1,6 +1,10 @@
-# astling
+<p align="center">
+  <img src="src/lib/assets/favicon.svg" alt="astling" width="128" height="128">
+</p>
 
-A cute little branch companion. Web-based Git branch manager built with SvelteKit remote functions.
+<h1 align="center">astling</h1>
+
+<p align="center">A cute little branch companion. Web-based Git branch manager.</p>
 
 ## Features
 
