@@ -535,6 +535,7 @@
 						<BranchCard
 							{branch}
 							selected={nav.selectedBranch === branch.name}
+							onSelect={(name) => (nav.selectedBranch = name)}
 							onCheckout={handleCheckout}
 							onToggleStar={handleToggleStar}
 							onDelete={(name) => handleDelete(name)}

@@ -32,7 +32,8 @@
 		onRenameComplete,
 		onError,
 		showDescriptionForm = false,
-		showRenameForm = false
+		showRenameForm = false,
+		onSelect
 	}: {
 		branch: BranchWithMetadata;
 		selected?: boolean;
@@ -44,6 +45,7 @@
 		onError?: (message: string) => void;
 		showDescriptionForm?: boolean;
 		showRenameForm?: boolean;
+		onSelect?: (name: string) => void;
 	} = $props();
 	let isBackingUp = $state(false);
 	let showDescription = $state(false);
@@ -165,6 +167,15 @@
 	class:selected
 	data-branch={branch.name}
 	style="view-transition-name: branch-{branch.name.replace(/[^a-zA-Z0-9]/g, '-')}"
+	onclick={() => onSelect?.(branch.name)}
+	onkeydown={(e) => {
+		if (e.key === 'Enter' || e.key === ' ') {
+			e.preventDefault();
+			onSelect?.(branch.name);
+		}
+	}}
+	role="button"
+	tabindex="0"
 >
 	<div class="branch-header">
 		<div class="branch-info">
