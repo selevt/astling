@@ -6,6 +6,7 @@
 		getRecentCommits,
 		getRepoPath,
 		checkoutBranch,
+		createBranch,
 		toggleStar,
 		deleteBranch,
 		getStaleBranches,
@@ -58,6 +59,29 @@
 	function showErrorDialog(msg: string) {
 		errorMessage = msg;
 		showError = true;
+	}
+
+	async function withViewTransition(action: () => Promise<boolean>): Promise<boolean> {
+		if (!document.startViewTransition) {
+			return action();
+		}
+		let success = false;
+		let vt: ReturnType<typeof document.startViewTransition> | null = null;
+		vt = document.startViewTransition(async () => {
+			try {
+				success = await action();
+			} catch (err) {
+				vt?.skipTransition();
+				throw err;
+			}
+			if (success) {
+				await tick();
+			} else {
+				vt?.skipTransition();
+			}
+		});
+		await vt.finished;
+		return success;
 	}
 
 	// Remote-derived sources (async-derived)
@@ -136,29 +160,28 @@
 	}
 
 	async function handleCheckout(name: string) {
-		const doCheckout = async () => {
-			const result = await checkoutBranch(name);
-			if (!result.success) {
-				showErrorDialog(result.error);
-			}
-			return result.success;
-		};
-		let viewTransition: ReturnType<typeof document.startViewTransition> | null = null;
 		try {
-			if (document.startViewTransition) {
-				viewTransition = document.startViewTransition(async () => {
-					if (await doCheckout()) {
-						await tick();
-					} else if (viewTransition?.skipTransition) {
-						viewTransition.skipTransition();
-					}
-				});
-			} else {
-				await doCheckout();
-			}
+			await withViewTransition(async () => {
+				const result = await checkoutBranch(name);
+				if (!result.success) showErrorDialog(result.error);
+				return result.success;
+			});
 		} catch (err) {
 			console.error('Failed to checkout:', err);
 			showErrorDialog(getErrorMessage(err));
+		}
+	}
+
+	async function handleCreate(name: string, startPoint: string): Promise<boolean> {
+		try {
+			return await withViewTransition(async () => {
+				await createBranch({ name, startPoint });
+				showCreateForm = false;
+				return true;
+			});
+		} catch (err) {
+			showErrorDialog(getErrorMessage(err));
+			return false;
 		}
 	}
 
@@ -181,20 +204,23 @@
 		const name = deleteBranchName;
 		const list = branchListPlain as BranchWithMetadata[];
 		const idx = list.findIndex((b) => b.name === name);
-		const result = await deleteBranch({ branch: name, force, remote: false });
-		if (!result.success) {
-			deleteError = result.error;
-			showDeleteDialog = true;
-			return;
-		}
-		showDeleteDialog = false;
-		// Move selection to next branch (or previous if last)
-		if (idx >= 0 && list.length > 1) {
-			const nextIdx = idx < list.length - 1 ? idx + 1 : idx - 1;
-			nav.selectedBranch = list[nextIdx].name;
-		} else {
-			nav.selectedBranch = null;
-		}
+		await withViewTransition(async () => {
+			const result = await deleteBranch({ branch: name, force, remote: false });
+			if (!result.success) {
+				deleteError = result.error;
+				showDeleteDialog = true;
+				return false;
+			}
+			showDeleteDialog = false;
+			// Move selection to next branch (or previous if last)
+			if (idx >= 0 && list.length > 1) {
+				const nextIdx = idx < list.length - 1 ? idx + 1 : idx - 1;
+				nav.selectedBranch = list[nextIdx].name;
+			} else {
+				nav.selectedBranch = null;
+			}
+			return true;
+		});
 	}
 
 	async function handlePrune() {
@@ -451,6 +477,7 @@
 			onSearchChange={handleSearchChange}
 			onSortChange={handleSortChange}
 			onFindMerged={() => (showMergedDialog = true)}
+			performCreate={handleCreate}
 			bind:showCreateForm
 		/>
 

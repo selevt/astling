@@ -1,6 +1,5 @@
 <script lang="ts">
 	import {
-		createBranch,
 		getRepoPath,
 		setRepoPath,
 		getTargetBranch,
@@ -17,7 +16,7 @@
 		onFilterChange,
 		onSearchChange,
 		onSortChange,
-		onCreateBranch,
+		performCreate,
 		onFindMerged,
 		showCreateForm = $bindable(false)
 	}: {
@@ -27,7 +26,7 @@
 		onFilterChange: (filter: string) => void;
 		onSearchChange: (term: string) => void;
 		onSortChange: (sort: string) => void;
-		onCreateBranch?: (name: string) => void;
+		performCreate: (name: string, startPoint: string) => Promise<boolean>;
 		onFindMerged?: () => void;
 		showCreateForm?: boolean;
 	} = $props();
@@ -103,16 +102,14 @@
 	async function handleCreateBranch() {
 		if (!newBranchName.trim() || isCreating) return;
 
+		const name = newBranchName.trim();
 		isCreating = true;
 		try {
-			await createBranch({ name: newBranchName.trim(), startPoint: newBranchStart });
-			newBranchName = '';
-			newBranchStart = targetBranch;
-			showCreateForm = false;
-			onCreateBranch?.(newBranchName.trim());
-		} catch (error) {
-			console.error('Failed to create branch:', error);
-			alert(`Failed to create branch: ${error instanceof Error ? error.message : 'Unknown error'}`);
+			const success = await performCreate(name, newBranchStart);
+			if (success) {
+				newBranchName = '';
+				newBranchStart = targetBranch;
+			}
 		} finally {
 			isCreating = false;
 		}
