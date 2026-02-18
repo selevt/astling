@@ -9,6 +9,11 @@
 	import DescriptionForm from './DescriptionForm.svelte';
 	import RenameForm from './RenameForm.svelte';
 	import type { BranchWithMetadata } from '$lib/server/git/types';
+	import StarIcon from '$lib/icons/StarIcon.svelte';
+	import EditIcon from '$lib/icons/EditIcon.svelte';
+	import DownloadIcon from '$lib/icons/DownloadIcon.svelte';
+	import TrashIcon from '$lib/icons/TrashIcon.svelte';
+	import FileTextIcon from '$lib/icons/FileTextIcon.svelte';
 
 	function getErrorMessage(err: unknown): string {
 		if (err && typeof err === 'object' && 'message' in err) {
@@ -184,37 +189,7 @@
 				onclick={handleToggleStar}
 				title={branch.starred ? 'Unstar branch' : 'Star branch'}
 			>
-				{#if branch.starred}
-					<svg
-						width="14"
-						height="14"
-						viewBox="0 0 24 24"
-						fill="currentColor"
-						stroke="currentColor"
-						stroke-width="2"
-						stroke-linecap="round"
-						stroke-linejoin="round"
-					>
-						<polygon
-							points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"
-						/>
-					</svg>
-				{:else}
-					<svg
-						width="14"
-						height="14"
-						viewBox="0 0 24 24"
-						fill="none"
-						stroke="currentColor"
-						stroke-width="2"
-						stroke-linecap="round"
-						stroke-linejoin="round"
-					>
-						<polygon
-							points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"
-						/>
-					</svg>
-				{/if}
+				<StarIcon filled={branch.starred} />
 			</button>
 			<button
 				class="checkout-btn"
@@ -234,19 +209,7 @@
 				}}
 				title="Rename branch"
 			>
-				<svg
-					width="14"
-					height="14"
-					viewBox="0 0 24 24"
-					fill="none"
-					stroke="currentColor"
-					stroke-width="2"
-					stroke-linecap="round"
-					stroke-linejoin="round"
-				>
-					<path d="M17 3a2.85 2.83 0 1 1 4 4L7.5 20.5 2 22l1.5-5.5Z" />
-					<path d="m15 5 4 4" />
-				</svg>
+				<EditIcon />
 			</button>
 			<button
 				class="backup-btn"
@@ -254,20 +217,7 @@
 				disabled={isBackingUp}
 				title="Backup branch as patch"
 			>
-				<svg
-					width="14"
-					height="14"
-					viewBox="0 0 24 24"
-					fill="none"
-					stroke="currentColor"
-					stroke-width="2"
-					stroke-linecap="round"
-					stroke-linejoin="round"
-				>
-					<path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" />
-					<polyline points="7 10 12 15 17 10" />
-					<line x1="12" y1="15" x2="12" y2="3" />
-				</svg>
+				<DownloadIcon />
 			</button>
 			<button
 				class="delete-btn"
@@ -275,22 +225,7 @@
 				disabled={branch.current}
 				title={branch.current ? 'Cannot delete current branch' : 'Delete branch'}
 			>
-				<svg
-					width="14"
-					height="14"
-					viewBox="0 0 24 24"
-					fill="none"
-					stroke="currentColor"
-					stroke-width="2"
-					stroke-linecap="round"
-					stroke-linejoin="round"
-				>
-					<polyline points="3 6 5 6 21 6" />
-					<path d="m19 6-.867 12.142A2 2 0 0 1 16.138 20H7.862a2 2 0 0 1-1.995-1.858L5 6" />
-					<path d="M10 11v6" />
-					<path d="M14 11v6" />
-					<path d="M9 6V4a1 1 0 0 1 1-1h4a1 1 0 0 1 1 1v2" />
-				</svg>
+				<TrashIcon />
 			</button>
 		</div>
 	</div>
@@ -306,22 +241,7 @@
 			onclick={() =>
 				branch.description ? (showDescription = !showDescription) : handleEditDescription()}
 		>
-			<svg
-				width="12"
-				height="12"
-				viewBox="0 0 24 24"
-				fill="none"
-				stroke="currentColor"
-				stroke-width="2"
-				stroke-linecap="round"
-				stroke-linejoin="round"
-			>
-				<path d="M14.5 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V7.5L14.5 2z" />
-				<polyline points="14 2 14 8 20 8" />
-				<line x1="16" y1="13" x2="8" y2="13" />
-				<line x1="16" y1="17" x2="8" y2="17" />
-				<line x1="10" y1="9" x2="8" y2="9" />
-			</svg>
+			<FileTextIcon />
 			{branch.description ? (showDescription ? 'Hide' : 'Edit') : 'Add'} Description
 		</button>
 		{#if branch.description && showDescription}

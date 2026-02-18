@@ -28,6 +28,12 @@
 	import faviconUrl from '$lib/assets/favicon.svg';
 	import { invalidateAll } from '$app/navigation';
 	import { tick } from 'svelte';
+	import UploadIcon from '$lib/icons/UploadIcon.svelte';
+	import RefreshIcon from '$lib/icons/RefreshIcon.svelte';
+	import ForkIcon from '$lib/icons/ForkIcon.svelte';
+	import CloudIcon from '$lib/icons/CloudIcon.svelte';
+	import ErrorIcon from '$lib/icons/ErrorIcon.svelte';
+	import GitBranchIcon from '$lib/icons/GitBranchIcon.svelte';
 
 	function getErrorMessage(err: unknown): string {
 		if (err && typeof err === 'object' && 'message' in err) {
@@ -357,20 +363,7 @@
 			</div>
 			<div class="header-actions">
 				<button class="restore-btn" onclick={handleRestoreClick} title="Restore patch file">
-					<svg
-						width="16"
-						height="16"
-						viewBox="0 0 24 24"
-						fill="none"
-						stroke="currentColor"
-						stroke-width="1.5"
-						stroke-linecap="round"
-						stroke-linejoin="round"
-					>
-						<path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" />
-						<polyline points="17 8 12 3 7 8" />
-						<line x1="12" y1="3" x2="12" y2="15" />
-					</svg>
+					<UploadIcon />
 				</button>
 				<input
 					bind:this={restoreFileInput}
@@ -380,22 +373,7 @@
 					style="display:none"
 				/>
 				<button class="refresh-btn" onclick={reload} disabled={isLoading} title="Refresh data">
-					<svg
-						class="refresh-icon"
-						class:spinning={isLoading}
-						width="16"
-						height="16"
-						viewBox="0 0 16 16"
-						fill="none"
-						stroke="currentColor"
-						stroke-width="1.5"
-						stroke-linecap="round"
-						stroke-linejoin="round"
-					>
-						<path d="M1.5 8a6.5 6.5 0 0 1 11.25-4.5M14.5 8a6.5 6.5 0 0 1-11.25 4.5" />
-						<polyline points="13 1 13 4.5 9.5 4.5" />
-						<polyline points="3 15 3 11.5 6.5 11.5" />
-					</svg>
+					<RefreshIcon class={`refresh-icon ${isLoading ? 'spinning' : ''}`} />
 				</button>
 			</div>
 		</div>
@@ -429,26 +407,13 @@
 							showCommitDialog = true;
 						}}
 					>
-						<code class="commit-hash">{commit.hash}</code>{#if commit.isFork}<svg
+						<code class="commit-hash">{commit.hash}</code>{#if commit.isFork}<ForkIcon
 								class="fork-icon"
-								viewBox="0 0 16 16"
-								fill="currentColor"
 								aria-label="fork point"
-								><title>Base commit — where this branch diverged from the target</title><path
-									d="M5 3.25a.75.75 0 1 1-1.5 0 .75.75 0 0 1 1.5 0zm0 2.122a2.25 2.25 0 1 0-1.5 0v.878A2.25 2.25 0 0 0 5.75 8.5h1.5v1.128a2.251 2.251 0 1 0 1.5 0V8.5h1.5a2.25 2.25 0 0 0 2.25-2.25v-.878a2.25 2.25 0 1 0-1.5 0v.878a.75.75 0 0 1-.75.75h-4.5A.75.75 0 0 1 5 6.25v-.878zm3.75 7.378a.75.75 0 1 1-1.5 0 .75.75 0 0 1 1.5 0zm3-8.75a.75.75 0 1 1-1.5 0 .75.75 0 0 1 1.5 0z"
-								/></svg
-							>{/if}
+							/>{/if}
 						{#each commit.refs as ref (ref.name)}
 							<span class="ref-badge ref-badge--{ref.type}"
-								>{ref.name}{#if ref.synced}<svg
-										class="ref-cloud"
-										viewBox="0 0 24 24"
-										fill="currentColor"
-										><title>on remote</title><path
-											d="M19.35 10.04A7.49 7.49 0 0 0 12 4C9.11 4 6.6 5.64 5.35 8.04A5.994 5.994 0 0 0 0 14c0 3.31 2.69 6 6 6h13c2.76 0 5-2.24 5-5 0-2.64-2.05-4.78-4.65-4.96z"
-											opacity="0.55"
-										/></svg
-									>{/if}</span
+								>{ref.name}{#if ref.synced}<CloudIcon class="ref-cloud" />{/if}</span
 							>
 						{/each}
 						<span class="commit-message">{commit.message}</span>
@@ -521,21 +486,7 @@
 		{#if error}
 			<div class="error-message">
 				<h3>
-					<svg
-						width="20"
-						height="20"
-						viewBox="0 0 24 24"
-						fill="none"
-						stroke="currentColor"
-						stroke-width="2"
-						stroke-linecap="round"
-						stroke-linejoin="round"
-						style="vertical-align: middle; margin-right: 6px;"
-					>
-						<path d="m21.73 18-8-14a2 2 0 0 0-3.48 0l-8 14A2 2 0 0 0 4 21h16a2 2 0 0 0 1.73-3Z" />
-						<line x1="12" y1="9" x2="12" y2="13" />
-						<line x1="12" y1="17" x2="12.01" y2="17" />
-					</svg>
+					<ErrorIcon style="vertical-align: middle; margin-right: 6px;" />
 					Error
 				</h3>
 				<p>{error}</p>
@@ -543,21 +494,7 @@
 			</div>
 		{:else if isLoading}
 			<div class="loading-state">
-				<svg
-					class="loading-spinner"
-					width="32"
-					height="32"
-					viewBox="0 0 16 16"
-					fill="none"
-					stroke="currentColor"
-					stroke-width="1.5"
-					stroke-linecap="round"
-					stroke-linejoin="round"
-				>
-					<path d="M1.5 8a6.5 6.5 0 0 1 11.25-4.5M14.5 8a6.5 6.5 0 0 1-11.25 4.5" />
-					<polyline points="13 1 13 4.5 9.5 4.5" />
-					<polyline points="3 15 3 11.5 6.5 11.5" />
-				</svg>
+				<RefreshIcon class="loading-spinner" width={32} height={32} />
 				<h3>Loading branches...</h3>
 			</div>
 		{:else}
@@ -582,21 +519,7 @@
 			{#if (branchListPlain as BranchWithMetadata[]).length === 0}
 				<div class="empty-state">
 					<div class="empty-icon">
-						<svg
-							width="48"
-							height="48"
-							viewBox="0 0 24 24"
-							fill="none"
-							stroke="currentColor"
-							stroke-width="1.5"
-							stroke-linecap="round"
-							stroke-linejoin="round"
-						>
-							<line x1="6" y1="3" x2="6" y2="15" />
-							<circle cx="18" cy="6" r="3" />
-							<circle cx="6" cy="18" r="3" />
-							<path d="M18 9a9 9 0 0 1-9 9" />
-						</svg>
+						<GitBranchIcon width={48} height={48} />
 					</div>
 					<h3>No branches found</h3>
 					<p>
@@ -1047,11 +970,11 @@
 		border: 1px solid var(--badge-border);
 	}
 
-	.ref-cloud {
-		width: 14px;
-		height: 10px;
-		margin-left: 3px;
-		vertical-align: -1px;
+	:global(.ref-cloud) {
+		width: 12px !important;
+		height: 12px !important;
+		margin-left: 4px;
+		vertical-align: -2px;
 		flex-shrink: 0;
 	}
 

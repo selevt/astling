@@ -1,5 +1,6 @@
 <script lang="ts">
 	import type { Snippet } from 'svelte';
+	import CloseIcon from '$lib/icons/CloseIcon.svelte';
 
 	let {
 		open = $bindable(false),
@@ -43,7 +44,9 @@
 		{#if title}
 			<header class="dialog-header">
 				<h3>{title}</h3>
-				<button type="button" class="dialog-close" onclick={() => dialogEl?.close()}>✕</button>
+				<button type="button" class="dialog-close" onclick={() => dialogEl?.close()}
+					><CloseIcon /></button
+				>
 			</header>
 		{/if}
 		<div class="dialog-body">
