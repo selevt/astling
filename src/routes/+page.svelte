@@ -381,16 +381,6 @@
 
 	{#if statsData}
 		<section class="stats-section">
-			<div class="stats-grid">
-				<div class="stat-card">
-					<div class="stat-number">{statsData.totalGitBranches}</div>
-					<div class="stat-label">Total Branches</div>
-				</div>
-				<div class="stat-card">
-					<div class="stat-number">{statsData.starredBranches}</div>
-					<div class="stat-label">Starred</div>
-				</div>
-			</div>
 			<div class="branch-commits-card">
 				<div class="branch-commits-header">
 					<span class="branch-commits-label">Current Branch</span>
@@ -481,6 +471,8 @@
 			onFindMerged={() => (showMergedDialog = true)}
 			performCreate={handleCreate}
 			bind:showCreateForm
+			totalBranches={statsData?.totalGitBranches ?? 0}
+			starredCount={statsData?.starredBranches ?? 0}
 		/>
 
 		{#if error}

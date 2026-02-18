@@ -23,7 +23,9 @@
 		onSortChange,
 		performCreate,
 		onFindMerged,
-		showCreateForm = $bindable(false)
+		showCreateForm = $bindable(false),
+		totalBranches = 0,
+		starredCount = 0
 	}: {
 		currentFilter: string;
 		searchTerm: string;
@@ -34,6 +36,8 @@
 		performCreate: (name: string, startPoint: string) => Promise<boolean>;
 		onFindMerged?: () => void;
 		showCreateForm?: boolean;
+		totalBranches?: number;
+		starredCount?: number;
 	} = $props();
 
 	let newBranchName = $state('');
@@ -93,10 +97,10 @@
 		}
 	}
 
-	const filters = [
-		{ value: 'all', label: 'All Branches' },
-		{ value: 'starred', label: 'Starred' }
-	];
+	const filters = $derived([
+		{ value: 'all', label: `All Branches (${totalBranches})` },
+		{ value: 'starred', label: `Starred (${starredCount})` }
+	]);
 
 	const sortOptions = [
 		{ value: 'name', label: 'Name' },
