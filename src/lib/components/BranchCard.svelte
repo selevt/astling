@@ -184,7 +184,37 @@
 				onclick={handleToggleStar}
 				title={branch.starred ? 'Unstar branch' : 'Star branch'}
 			>
-				{branch.starred ? '⭐' : '☆'}
+				{#if branch.starred}
+					<svg
+						width="14"
+						height="14"
+						viewBox="0 0 24 24"
+						fill="currentColor"
+						stroke="currentColor"
+						stroke-width="2"
+						stroke-linecap="round"
+						stroke-linejoin="round"
+					>
+						<polygon
+							points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"
+						/>
+					</svg>
+				{:else}
+					<svg
+						width="14"
+						height="14"
+						viewBox="0 0 24 24"
+						fill="none"
+						stroke="currentColor"
+						stroke-width="2"
+						stroke-linecap="round"
+						stroke-linejoin="round"
+					>
+						<polygon
+							points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"
+						/>
+					</svg>
+				{/if}
 			</button>
 			<button
 				class="checkout-btn"
@@ -245,7 +275,22 @@
 				disabled={branch.current}
 				title={branch.current ? 'Cannot delete current branch' : 'Delete branch'}
 			>
-				🗑️
+				<svg
+					width="14"
+					height="14"
+					viewBox="0 0 24 24"
+					fill="none"
+					stroke="currentColor"
+					stroke-width="2"
+					stroke-linecap="round"
+					stroke-linejoin="round"
+				>
+					<polyline points="3 6 5 6 21 6" />
+					<path d="m19 6-.867 12.142A2 2 0 0 1 16.138 20H7.862a2 2 0 0 1-1.995-1.858L5 6" />
+					<path d="M10 11v6" />
+					<path d="M14 11v6" />
+					<path d="M9 6V4a1 1 0 0 1 1-1h4a1 1 0 0 1 1 1v2" />
+				</svg>
 			</button>
 		</div>
 	</div>
@@ -261,7 +306,23 @@
 			onclick={() =>
 				branch.description ? (showDescription = !showDescription) : handleEditDescription()}
 		>
-			📝 {branch.description ? (showDescription ? 'Hide' : 'Edit') : 'Add'} Description
+			<svg
+				width="12"
+				height="12"
+				viewBox="0 0 24 24"
+				fill="none"
+				stroke="currentColor"
+				stroke-width="2"
+				stroke-linecap="round"
+				stroke-linejoin="round"
+			>
+				<path d="M14.5 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V7.5L14.5 2z" />
+				<polyline points="14 2 14 8 20 8" />
+				<line x1="16" y1="13" x2="8" y2="13" />
+				<line x1="16" y1="17" x2="8" y2="17" />
+				<line x1="10" y1="9" x2="8" y2="9" />
+			</svg>
+			{branch.description ? (showDescription ? 'Hide' : 'Edit') : 'Add'} Description
 		</button>
 		{#if branch.description && showDescription}
 			<p class="description">{branch.description}</p>
@@ -390,6 +451,9 @@
 		height: 32px;
 		padding: 0;
 		line-height: 1;
+		display: flex;
+		align-items: center;
+		justify-content: center;
 	}
 
 	.rename-btn {
@@ -454,6 +518,12 @@
 	.delete-btn {
 		color: var(--color-error-text);
 		border-color: var(--color-error-border);
+		display: flex;
+		align-items: center;
+		justify-content: center;
+		width: 32px;
+		height: 32px;
+		padding: 0;
 	}
 
 	.delete-btn:hover:not(:disabled) {
@@ -506,6 +576,9 @@
 		font-size: 12px;
 		padding: 4px 0;
 		text-decoration: underline;
+		display: flex;
+		align-items: center;
+		gap: 5px;
 	}
 
 	.description-toggle:hover {

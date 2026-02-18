@@ -520,7 +520,24 @@
 
 		{#if error}
 			<div class="error-message">
-				<h3>⚠️ Error</h3>
+				<h3>
+					<svg
+						width="20"
+						height="20"
+						viewBox="0 0 24 24"
+						fill="none"
+						stroke="currentColor"
+						stroke-width="2"
+						stroke-linecap="round"
+						stroke-linejoin="round"
+						style="vertical-align: middle; margin-right: 6px;"
+					>
+						<path d="m21.73 18-8-14a2 2 0 0 0-3.48 0l-8 14A2 2 0 0 0 4 21h16a2 2 0 0 0 1.73-3Z" />
+						<line x1="12" y1="9" x2="12" y2="13" />
+						<line x1="12" y1="17" x2="12.01" y2="17" />
+					</svg>
+					Error
+				</h3>
 				<p>{error}</p>
 				<button onclick={reload}>Try Again</button>
 			</div>
@@ -564,7 +581,23 @@
 
 			{#if (branchListPlain as BranchWithMetadata[]).length === 0}
 				<div class="empty-state">
-					<div class="empty-icon">🌱</div>
+					<div class="empty-icon">
+						<svg
+							width="48"
+							height="48"
+							viewBox="0 0 24 24"
+							fill="none"
+							stroke="currentColor"
+							stroke-width="1.5"
+							stroke-linecap="round"
+							stroke-linejoin="round"
+						>
+							<line x1="6" y1="3" x2="6" y2="15" />
+							<circle cx="18" cy="6" r="3" />
+							<circle cx="6" cy="18" r="3" />
+							<path d="M18 9a9 9 0 0 1-9 9" />
+						</svg>
+					</div>
 					<h3>No branches found</h3>
 					<p>
 						{searchTerm
@@ -808,8 +841,9 @@
 	}
 
 	.empty-icon {
-		font-size: 48px;
+		line-height: 1;
 		margin-bottom: 16px;
+		color: var(--color-text-secondary);
 	}
 
 	.empty-state h3 {
