@@ -313,6 +313,9 @@ export const deleteBranch = command(
 // Query to get recent commits
 export const getRecentCommits = query(async () => {
 	try {
+		const target = gitService.getTargetBranch();
+		const ahead = await gitService.getCommitsAheadOf(target);
+		if (ahead.length > 0) return ahead;
 		return await gitService.getRecentCommits(3);
 	} catch (error) {
 		console.error('Failed to get recent commits:', error);

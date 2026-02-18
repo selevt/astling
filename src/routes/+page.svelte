@@ -91,6 +91,16 @@
 	let recentCommits = $derived(await getRecentCommits());
 	let pruneInfo = $derived(await getStaleBranches());
 	let isPruning = $state(false);
+	let showAllCommits = $state(false);
+	let _prevCommitBranch = $state('');
+	$effect(() => {
+		const branch =
+			(statsData as { currentBranch?: string | null } | undefined)?.currentBranch ?? '';
+		if (branch !== _prevCommitBranch) {
+			_prevCommitBranch = branch;
+			showAllCommits = false;
+		}
+	});
 
 	// Compose visible branch list as an async-derived signal. Template will
 	// await it where needed.
@@ -406,7 +416,7 @@
 				</div>
 				{#if recentCommits.length > 0}
 					<div class="branch-commits-list">
-						{#each recentCommits as commit (commit.hash)}
+						{#each showAllCommits ? recentCommits : recentCommits.slice(0, 3) as commit (commit.hash)}
 							<button
 								class="commit-row"
 								type="button"
@@ -435,6 +445,14 @@
 							</button>
 						{/each}
 					</div>
+					{#if recentCommits.length > 3}
+						<button
+							class="commits-expand-toggle"
+							onclick={() => (showAllCommits = !showAllCommits)}
+						>
+							{showAllCommits ? '▲ fewer' : `▼ ${recentCommits.length - 3} more`}
+						</button>
+					{/if}
 				{/if}
 			</div>
 		</section>
@@ -862,6 +880,21 @@
 	.branch-commits-list {
 		border-top: 1px solid var(--color-border);
 		padding-top: 10px;
+	}
+
+	.commits-expand-toggle {
+		font-size: 0.7rem;
+		color: var(--color-text-secondary);
+		background: none;
+		border: none;
+		cursor: pointer;
+		padding: 2px 6px;
+		width: 100%;
+		text-align: left;
+		opacity: 0.6;
+	}
+	.commits-expand-toggle:hover {
+		opacity: 1;
 	}
 
 	.commit-row {

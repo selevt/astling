@@ -293,20 +293,8 @@ export class GitService {
 		}
 	}
 
-	async getRecentCommits(n: number = 3): Promise<RecentCommit[]> {
-		const result = await this.execGitCommand([
-			'log',
-			'--oneline',
-			'-n',
-			String(n),
-			'--format=%h|%s|%ar|%D'
-		]);
-
-		if (!result.success) {
-			return [];
-		}
-
-		return result.output
+	private parseCommitLog(output: string): RecentCommit[] {
+		return output
 			.split('\n')
 			.filter((line) => line.trim())
 			.map((line) => {
@@ -341,6 +329,28 @@ export class GitService {
 				}
 				return { hash: hash || '', message: message || '', relativeDate: relativeDate || '', refs };
 			});
+	}
+
+	async getRecentCommits(n: number = 3): Promise<RecentCommit[]> {
+		const result = await this.execGitCommand([
+			'log',
+			'--oneline',
+			'-n',
+			String(n),
+			'--format=%h|%s|%ar|%D'
+		]);
+		if (!result.success) return [];
+		return this.parseCommitLog(result.output);
+	}
+
+	async getCommitsAheadOf(targetBranch: string): Promise<RecentCommit[]> {
+		const result = await this.execGitCommand([
+			'log',
+			`${targetBranch}..HEAD`,
+			'--format=%h|%s|%ar|%D'
+		]);
+		if (!result.success || !result.output.trim()) return [];
+		return this.parseCommitLog(result.output);
 	}
 
 	/**
