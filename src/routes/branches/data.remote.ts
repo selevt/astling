@@ -315,7 +315,10 @@ export const getRecentCommits = query(async () => {
 	try {
 		const target = gitService.getTargetBranch();
 		const ahead = await gitService.getCommitsAheadOf(target);
-		if (ahead.length > 0) return ahead;
+		if (ahead.length > 0) {
+			const fork = await gitService.getForkCommit(target);
+			return fork ? [...ahead, fork] : ahead;
+		}
 		return await gitService.getRecentCommits(3);
 	} catch (error) {
 		console.error('Failed to get recent commits:', error);

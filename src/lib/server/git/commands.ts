@@ -353,6 +353,25 @@ export class GitService {
 		return this.parseCommitLog(result.output);
 	}
 
+	async getForkCommit(targetBranch: string): Promise<RecentCommit | null> {
+		const mergeBaseResult = await this.execGitCommand(['merge-base', 'HEAD', targetBranch]);
+		if (!mergeBaseResult.success || !mergeBaseResult.output.trim()) return null;
+		const mergeBase = mergeBaseResult.output.trim();
+
+		const result = await this.execGitCommand([
+			'log',
+			mergeBase,
+			'-n',
+			'1',
+			'--format=%h|%s|%ar|%D'
+		]);
+		if (!result.success || !result.output.trim()) return null;
+		const commits = this.parseCommitLog(result.output);
+		const commit = commits[0];
+		if (!commit) return null;
+		return { ...commit, isFork: true };
+	}
+
 	/**
 	 * Parse reflog for checkout events, returning branch names with their most recent
 	 * checkout timestamp, ordered most-recent-first.

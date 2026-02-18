@@ -89,9 +89,13 @@
 	let starred = $derived(await getStarredBranches());
 	let statsData = $derived(await getStats());
 	let recentCommits = $derived(await getRecentCommits());
+	let showAllCommits = $state(false);
+	let forkCommit = $derived(recentCommits.find((c) => c.isFork) ?? null);
+	let aheadCommits = $derived(forkCommit ? recentCommits.filter((c) => !c.isFork) : recentCommits);
+	let hasMoreCommits = $derived(aheadCommits.length > 3);
+	let visibleCommits = $derived(showAllCommits ? aheadCommits : aheadCommits.slice(0, 3));
 	let pruneInfo = $derived(await getStaleBranches());
 	let isPruning = $state(false);
-	let showAllCommits = $state(false);
 	let _prevCommitBranch = $state('');
 	$effect(() => {
 		const branch =
@@ -414,44 +418,59 @@
 					<span class="branch-commits-label">Current Branch</span>
 					<code class="branch-commits-name">{statsData.currentBranch || 'None'}</code>
 				</div>
+				{#snippet commitRow(commit: RecentCommit)}
+					<button
+						class="commit-row"
+						class:commit--fork={commit.isFork}
+						type="button"
+						onclick={() => {
+							selectedCommitHash = commit.hash;
+							selectedCommitMessage = commit.message;
+							showCommitDialog = true;
+						}}
+					>
+						<code class="commit-hash">{commit.hash}</code>{#if commit.isFork}<svg
+								class="fork-icon"
+								viewBox="0 0 16 16"
+								fill="currentColor"
+								aria-label="fork point"
+								><title>Base commit — where this branch diverged from the target</title><path
+									d="M5 3.25a.75.75 0 1 1-1.5 0 .75.75 0 0 1 1.5 0zm0 2.122a2.25 2.25 0 1 0-1.5 0v.878A2.25 2.25 0 0 0 5.75 8.5h1.5v1.128a2.251 2.251 0 1 0 1.5 0V8.5h1.5a2.25 2.25 0 0 0 2.25-2.25v-.878a2.25 2.25 0 1 0-1.5 0v.878a.75.75 0 0 1-.75.75h-4.5A.75.75 0 0 1 5 6.25v-.878zm3.75 7.378a.75.75 0 1 1-1.5 0 .75.75 0 0 1 1.5 0zm3-8.75a.75.75 0 1 1-1.5 0 .75.75 0 0 1 1.5 0z"
+								/></svg
+							>{/if}
+						{#each commit.refs as ref (ref.name)}
+							<span class="ref-badge ref-badge--{ref.type}"
+								>{ref.name}{#if ref.synced}<svg
+										class="ref-cloud"
+										viewBox="0 0 24 24"
+										fill="currentColor"
+										><title>on remote</title><path
+											d="M19.35 10.04A7.49 7.49 0 0 0 12 4C9.11 4 6.6 5.64 5.35 8.04A5.994 5.994 0 0 0 0 14c0 3.31 2.69 6 6 6h13c2.76 0 5-2.24 5-5 0-2.64-2.05-4.78-4.65-4.96z"
+											opacity="0.55"
+										/></svg
+									>{/if}</span
+							>
+						{/each}
+						<span class="commit-message">{commit.message}</span>
+						<span class="commit-date">{commit.relativeDate}</span>
+					</button>
+				{/snippet}
 				{#if recentCommits.length > 0}
 					<div class="branch-commits-list">
-						{#each showAllCommits ? recentCommits : recentCommits.slice(0, 3) as commit (commit.hash)}
-							<button
-								class="commit-row"
-								type="button"
-								onclick={() => {
-									selectedCommitHash = commit.hash;
-									selectedCommitMessage = commit.message;
-									showCommitDialog = true;
-								}}
-							>
-								<code class="commit-hash">{commit.hash}</code>
-								{#each commit.refs as ref}
-									<span class="ref-badge ref-badge--{ref.type}"
-										>{ref.name}{#if ref.synced}<svg
-												class="ref-cloud"
-												viewBox="0 0 24 24"
-												fill="currentColor"
-												><title>on remote</title><path
-													d="M19.35 10.04A7.49 7.49 0 0 0 12 4C9.11 4 6.6 5.64 5.35 8.04A5.994 5.994 0 0 0 0 14c0 3.31 2.69 6 6 6h13c2.76 0 5-2.24 5-5 0-2.64-2.05-4.78-4.65-4.96z"
-													opacity="0.55"
-												/></svg
-											>{/if}</span
-									>
-								{/each}
-								<span class="commit-message">{commit.message}</span>
-								<span class="commit-date">{commit.relativeDate}</span>
-							</button>
+						{#each visibleCommits as commit (commit.hash)}
+							{@render commitRow(commit)}
 						{/each}
 					</div>
-					{#if recentCommits.length > 3}
+					{#if hasMoreCommits}
 						<button
 							class="commits-expand-toggle"
 							onclick={() => (showAllCommits = !showAllCommits)}
 						>
-							{showAllCommits ? '▲ fewer' : `▼ ${recentCommits.length - 3} more`}
+							{showAllCommits ? '▲ fewer' : `▼ ${aheadCommits.length - 3} more`}
 						</button>
+					{/if}
+					{#if forkCommit}
+						{@render commitRow(forkCommit)}
 					{/if}
 				{/if}
 			</div>
@@ -895,6 +914,18 @@
 	}
 	.commits-expand-toggle:hover {
 		opacity: 1;
+	}
+	.commit--fork {
+		color: var(--color-text-secondary);
+		opacity: 0.7;
+	}
+	.fork-icon {
+		width: 12px;
+		height: 12px;
+		margin-left: 4px;
+		flex-shrink: 0;
+		vertical-align: -1px;
+		color: var(--color-text-secondary);
 	}
 
 	.commit-row {
