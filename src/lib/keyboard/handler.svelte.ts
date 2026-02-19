@@ -116,6 +116,11 @@ export function createKeyboardNav(
 			return;
 		}
 
+		// Let buttons and links handle their own activation keys natively
+		const isInteractive =
+			active instanceof HTMLButtonElement || active instanceof HTMLAnchorElement;
+		if (isInteractive && (e.key === 'Enter' || e.key === ' ')) return;
+
 		// Handle second key in g-prefix sequence
 		if (pendingKey === 'g') {
 			e.preventDefault();
@@ -172,7 +177,7 @@ export function createKeyboardNav(
 				if (b) actions.checkoutSelected(b);
 				break;
 			}
-			case ' ': {
+			case 's': {
 				e.preventDefault();
 				const b = getSelectedBranch();
 				if (b) actions.toggleStarSelected(b);

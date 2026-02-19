@@ -28,7 +28,7 @@
 			<dl>
 				<dt><kbd>o</kbd></dt>
 				<dd>Checkout branch</dd>
-				<dt><kbd>Space</kbd></dt>
+				<dt><kbd>s</kbd></dt>
 				<dd>Toggle star</dd>
 				<dt><kbd>d</kbd></dt>
 				<dd>Delete branch</dd>

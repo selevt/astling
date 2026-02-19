@@ -182,6 +182,7 @@
 	onclick={() => onSelect?.(branch.name)}
 	onkeydown={(e) => {
 		if (e.key === 'Enter' || e.key === ' ') {
+			if (e.target !== e.currentTarget) return;
 			e.preventDefault();
 			onSelect?.(branch.name);
 		}
