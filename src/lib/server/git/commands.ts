@@ -331,30 +331,27 @@ export class GitService {
 			});
 	}
 
-	async getRecentCommits(n: number = 3): Promise<RecentCommit[]> {
-		const result = await this.execGitCommand([
-			'log',
-			'--oneline',
-			'-n',
-			String(n),
-			'--format=%h|%s|%ar|%D'
-		]);
+	async getRecentCommits(n: number = 3, ref?: string): Promise<RecentCommit[]> {
+		const args = ref
+			? ['log', ref, '--oneline', '-n', String(n), '--format=%h|%s|%ar|%D']
+			: ['log', '--oneline', '-n', String(n), '--format=%h|%s|%ar|%D'];
+		const result = await this.execGitCommand(args);
 		if (!result.success) return [];
 		return this.parseCommitLog(result.output);
 	}
 
-	async getCommitsAheadOf(targetBranch: string): Promise<RecentCommit[]> {
+	async getCommitsAheadOf(targetBranch: string, ref = 'HEAD'): Promise<RecentCommit[]> {
 		const result = await this.execGitCommand([
 			'log',
-			`${targetBranch}..HEAD`,
+			`${targetBranch}..${ref}`,
 			'--format=%h|%s|%ar|%D'
 		]);
 		if (!result.success || !result.output.trim()) return [];
 		return this.parseCommitLog(result.output);
 	}
 
-	async getForkCommit(targetBranch: string): Promise<RecentCommit | null> {
-		const mergeBaseResult = await this.execGitCommand(['merge-base', 'HEAD', targetBranch]);
+	async getForkCommit(targetBranch: string, ref = 'HEAD'): Promise<RecentCommit | null> {
+		const mergeBaseResult = await this.execGitCommand(['merge-base', ref, targetBranch]);
 		if (!mergeBaseResult.success || !mergeBaseResult.output.trim()) return null;
 		const mergeBase = mergeBaseResult.output.trim();
 

@@ -40,6 +40,8 @@
 				<dd>Rename branch</dd>
 				<dt><kbd>b</kbd></dt>
 				<dd>Backup branch</dd>
+				<dt><kbd>l</kbd></dt>
+				<dd>Toggle commit history</dd>
 				<dt><kbd>c</kbd></dt>
 				<dd>Create branch</dd>
 				<dt><kbd>r</kbd></dt>

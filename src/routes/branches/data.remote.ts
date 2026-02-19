@@ -305,6 +305,22 @@ export const deleteBranch = command(
 	}
 );
 
+// Query to get commits for an arbitrary branch (by branch name as ref)
+export const getBranchCommits = query(v.string(), async (branchName) => {
+	try {
+		const target = gitService.getTargetBranch();
+		const ahead = await gitService.getCommitsAheadOf(target, branchName);
+		if (ahead.length > 0) {
+			const fork = await gitService.getForkCommit(target, branchName);
+			return fork ? [...ahead, fork] : ahead;
+		}
+		return await gitService.getRecentCommits(10, branchName);
+	} catch (error) {
+		console.error(`Failed to get commits for '${branchName}':`, error);
+		return [];
+	}
+});
+
 // Query to get recent commits
 export const getRecentCommits = query(async () => {
 	try {

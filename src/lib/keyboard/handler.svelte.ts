@@ -12,6 +12,9 @@ export interface KeyboardNavActions {
 	renameBranch: (branch: BranchWithMetadata) => void;
 	findMerged: () => void;
 	backupBranch: (branch: BranchWithMetadata) => void;
+	toggleHistory: (branch: BranchWithMetadata) => void;
+	isHistoryOpen: () => boolean;
+	closeHistory: () => void;
 }
 
 export function createKeyboardNav(
@@ -217,6 +220,12 @@ export function createKeyboardNav(
 				if (b) actions.backupBranch(b);
 				break;
 			}
+			case 'l': {
+				e.preventDefault();
+				const b = getSelectedBranch();
+				if (b) actions.toggleHistory(b);
+				break;
+			}
 			case 'Escape':
 				// Let open dialogs handle Escape natively
 				if (document.querySelector('dialog[open]')) return;
@@ -224,6 +233,8 @@ export function createKeyboardNav(
 				// Cascading dismiss
 				if (showHelp) {
 					showHelp = false;
+				} else if (actions.isHistoryOpen()) {
+					actions.closeHistory();
 				} else if (selectedBranch !== null) {
 					selectedBranch = null;
 				}

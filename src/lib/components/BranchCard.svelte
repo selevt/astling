@@ -8,12 +8,14 @@
 	} from '../../routes/branches/data.remote';
 	import DescriptionForm from './DescriptionForm.svelte';
 	import RenameForm from './RenameForm.svelte';
-	import type { BranchWithMetadata } from '$lib/server/git/types';
+	import CommitList from './CommitList.svelte';
+	import type { BranchWithMetadata, RecentCommit } from '$lib/server/git/types';
 	import StarIcon from '$lib/icons/StarIcon.svelte';
 	import EditIcon from '$lib/icons/EditIcon.svelte';
 	import DownloadIcon from '$lib/icons/DownloadIcon.svelte';
 	import TrashIcon from '$lib/icons/TrashIcon.svelte';
 	import FileTextIcon from '$lib/icons/FileTextIcon.svelte';
+	import HistoryIcon from '$lib/icons/HistoryIcon.svelte';
 
 	function getErrorMessage(err: unknown): string {
 		if (err && typeof err === 'object' && 'message' in err) {
@@ -33,7 +35,12 @@
 		onError,
 		showDescriptionForm = false,
 		showRenameForm = false,
-		onSelect
+		onSelect,
+		showCommitHistory,
+		commitHistory,
+		commitHistoryLoading,
+		onCommitClick,
+		onToggleHistory
 	}: {
 		branch: BranchWithMetadata;
 		selected?: boolean;
@@ -46,6 +53,11 @@
 		showDescriptionForm?: boolean;
 		showRenameForm?: boolean;
 		onSelect?: (name: string) => void;
+		showCommitHistory?: boolean;
+		commitHistory?: RecentCommit[];
+		commitHistoryLoading?: boolean;
+		onCommitClick?: (hash: string, message: string) => void;
+		onToggleHistory?: () => void;
 	} = $props();
 	let isBackingUp = $state(false);
 	let showDescription = $state(false);
@@ -223,6 +235,17 @@
 				<EditIcon />
 			</button>
 			<button
+				class="history-btn"
+				class:active={showCommitHistory}
+				onclick={(e) => {
+					e.stopPropagation();
+					onToggleHistory?.();
+				}}
+				title="Toggle commit history (l)"
+			>
+				<HistoryIcon />
+			</button>
+			<button
 				class="backup-btn"
 				onclick={handleBackup}
 				disabled={isBackingUp}
@@ -282,6 +305,17 @@
 			}}
 			{onError}
 		/>
+	{/if}
+
+	{#if showCommitHistory}
+		<div class="branch-history-section">
+			<CommitList
+				commits={commitHistory ?? []}
+				loading={commitHistoryLoading}
+				initialVisible={5}
+				{onCommitClick}
+			/>
+		</div>
 	{/if}
 </div>
 
@@ -365,7 +399,8 @@
 	.checkout-btn,
 	.delete-btn,
 	.rename-btn,
-	.backup-btn {
+	.backup-btn,
+	.history-btn {
 		padding: 6px 12px;
 		border: 1px solid var(--color-border-input);
 		border-radius: 6px;
@@ -385,6 +420,26 @@
 		display: flex;
 		align-items: center;
 		justify-content: center;
+	}
+
+	.history-btn {
+		color: var(--color-text-secondary);
+		display: flex;
+		align-items: center;
+		justify-content: center;
+		width: 32px;
+		height: 32px;
+		padding: 0;
+	}
+
+	.history-btn:hover,
+	.history-btn.active {
+		color: var(--color-accent-blue);
+		border-color: var(--color-accent-blue);
+	}
+
+	.history-btn.active {
+		background: var(--color-bg-hover);
 	}
 
 	.rename-btn {
@@ -524,6 +579,12 @@
 		border-radius: 4px;
 		font-size: 14px;
 		color: var(--color-text-primary);
+	}
+
+	.branch-history-section {
+		margin-top: 12px;
+		padding-top: 12px;
+		border-top: 1px solid var(--color-border-input);
 	}
 
 	@keyframes pulse {
