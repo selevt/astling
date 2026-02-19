@@ -6,6 +6,8 @@
 
 <p align="center">A cute little branch companion. Web-based Git branch manager.</p>
 
+<p align="center"><em>Not intended to be a general-purpose Git client.</em></p>
+
 ## Features
 
 - View all local branches with author, commit message, and date
