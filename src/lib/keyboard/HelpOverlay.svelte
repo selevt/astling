@@ -32,6 +32,8 @@
 				<dd>Toggle star</dd>
 				<dt><kbd>d</kbd></dt>
 				<dd>Delete branch</dd>
+				<dt><kbd>D</kbd></dt>
+				<dd>Force delete branch</dd>
 				<dt><kbd>e</kbd></dt>
 				<dd>Edit description</dd>
 				<dt><kbd>R</kbd></dt>
@@ -64,6 +66,7 @@
 		display: grid;
 		grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
 		gap: 20px;
+		min-width: 560px;
 	}
 
 	.help-section h3 {

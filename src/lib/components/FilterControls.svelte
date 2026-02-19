@@ -254,7 +254,7 @@
 					showCreateForm = false;
 				}
 			})}
-			oninput={() => createBranchForm.validate({preflightOnly: true})}
+			oninput={() => createBranchForm.validate({ preflightOnly: true })}
 		>
 			<div class="dialog-form-group">
 				<label for="branch-name">Branch Name:</label>

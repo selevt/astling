@@ -5,7 +5,7 @@ export interface KeyboardNavActions {
 	focusSearch: () => void;
 	checkoutSelected: (branch: BranchWithMetadata) => void;
 	toggleStarSelected: (branch: BranchWithMetadata) => void;
-	deleteSelected: (branch: BranchWithMetadata) => void;
+	deleteSelected: (branch: BranchWithMetadata, force?: boolean) => void;
 	refresh: () => void;
 	createBranch: () => void;
 	editDescription: (branch: BranchWithMetadata) => void;
@@ -179,6 +179,12 @@ export function createKeyboardNav(
 				e.preventDefault();
 				const b = getSelectedBranch();
 				if (b) actions.deleteSelected(b);
+				break;
+			}
+			case 'D': {
+				e.preventDefault();
+				const b = getSelectedBranch();
+				if (b) actions.deleteSelected(b, true);
 				break;
 			}
 			case '?':

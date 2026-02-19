@@ -312,8 +312,15 @@
 			if (!b.current) handleCheckout(b.name);
 		},
 		toggleStarSelected: (b) => handleToggleStar(b.name),
-		deleteSelected: (b) => {
-			if (!b.current) handleDelete(b.name);
+		deleteSelected: (b, force) => {
+			if (!b.current) {
+				if (force) {
+					deleteBranchName = b.name;
+					performDelete(true);
+				} else {
+					handleDelete(b.name);
+				}
+			}
 		},
 		refresh: reload,
 		createBranch: () => {
