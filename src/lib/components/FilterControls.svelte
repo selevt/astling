@@ -2,9 +2,10 @@
 	import {
 		getRepoPath,
 		setRepoPath,
-		getTargetBranch,
-		setTargetBranch
+		setTargetBranch,
+		createBranch
 	} from '../../routes/branches/data.remote';
+	import { createBranchSchema } from '$lib/schemas/branch';
 	import { onMount } from 'svelte';
 	import Dialog from './Dialog.svelte';
 	import GitBranchIcon from '$lib/icons/GitBranchIcon.svelte';
@@ -21,7 +22,7 @@
 		onFilterChange,
 		onSearchChange,
 		onSortChange,
-		performCreate,
+		getTargetBranch,
 		onFindMerged,
 		showCreateForm = $bindable(false),
 		totalBranches = 0,
@@ -33,7 +34,7 @@
 		onFilterChange: (filter: string) => void;
 		onSearchChange: (term: string) => void;
 		onSortChange: (sort: string) => void;
-		performCreate: (name: string, startPoint: string) => Promise<boolean>;
+		getTargetBranch: () => Promise<string>;
 		onFindMerged?: () => void;
 		showCreateForm?: boolean;
 		totalBranches?: number;
@@ -43,6 +44,8 @@
 	let newBranchName = $state('');
 	let newBranchStart = $state('HEAD');
 	let isCreating = $state(false);
+
+	let createBranchForm = $derived(createBranch.preflight(createBranchSchema));
 
 	let repoPathInfo: { path: string; valid: boolean } | null = $state(null);
 	let editingRepoPath = $state(false);
@@ -72,6 +75,10 @@
 			targetBranch = tb;
 			newTargetBranch = tb;
 			newBranchStart = tb;
+
+			// TODO: this is weird. wihtout this, the select starts with no value, even though the UI
+			// shows the default. And if doing validate(), without it, the select value disappears.
+			createBranchForm.fields.startPoint.set(tb);
 		} catch (err) {
 			console.error('Failed to fetch target branch:', err);
 		}
@@ -107,22 +114,6 @@
 		{ value: 'recent', label: 'Recently Used' },
 		{ value: 'date', label: 'Last Commit' }
 	];
-
-	async function handleCreateBranch() {
-		if (!newBranchName.trim() || isCreating) return;
-
-		const name = newBranchName.trim();
-		isCreating = true;
-		try {
-			const success = await performCreate(name, newBranchStart);
-			if (success) {
-				newBranchName = '';
-				newBranchStart = targetBranch;
-			}
-		} finally {
-			isCreating = false;
-		}
-	}
 </script>
 
 <div class="controls">
@@ -255,26 +246,36 @@
 {#if showCreateForm}
 	<Dialog bind:open={showCreateForm} title="Create New Branch">
 		<form
-			onsubmit={(e) => {
-				e.preventDefault();
-				handleCreateBranch();
-			}}
+			{...createBranchForm.enhance(async ({ submit, form }) => {
+				await submit();
+				form.reset();
+				const issues = createBranchForm.fields?.allIssues() ?? [];
+				if (issues.length === 0) {
+					showCreateForm = false;
+				}
+			})}
+			oninput={() => createBranchForm.validate({preflightOnly: true})}
 		>
 			<div class="dialog-form-group">
 				<label for="branch-name">Branch Name:</label>
 				<input
+					{...createBranchForm.fields.name.as('text')}
 					id="branch-name"
-					type="text"
-					bind:value={newBranchName}
 					placeholder="feature/new-feature"
-					required
 					class="dialog-input"
 				/>
+				{#each createBranchForm.fields.name.issues() as issue}
+					<p class="issue">{issue.message}</p>
+				{/each}
 			</div>
 
 			<div class="dialog-form-group">
 				<label for="start-point">Start From:</label>
-				<select id="start-point" bind:value={newBranchStart} class="dialog-select">
+				<select
+					{...createBranchForm.fields.startPoint.as('select')}
+					id="start-point"
+					class="dialog-select"
+				>
 					<option value={targetBranch}>{targetBranch}</option>
 					<option value="HEAD">HEAD (current commit)</option>
 				</select>
@@ -290,10 +291,11 @@
 				</button>
 				<button
 					type="submit"
-					disabled={!newBranchName.trim() || isCreating}
+					disabled={!!createBranchForm.pending ||
+						(createBranchForm.fields?.name.issues()?.length ?? 0) > 0}
 					class="dialog-btn dialog-btn-primary"
 				>
-					{isCreating ? 'Creating...' : 'Create Branch'}
+					{createBranchForm.pending ? 'Creating...' : 'Create Branch'}
 				</button>
 			</div>
 		</form>
@@ -557,5 +559,11 @@
 
 	.cancel-repo-btn:hover {
 		background: var(--color-bg-hover);
+	}
+
+	.issue {
+		color: var(--color-error);
+		font-size: 12px;
+		margin-top: 4px;
 	}
 </style>

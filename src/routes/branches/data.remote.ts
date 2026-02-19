@@ -3,6 +3,7 @@ import * as v from 'valibot';
 import { gitService } from '$lib/server/git/commands';
 import { metadataService } from '$lib/server/storage/metadata';
 import type { GitBranch, BranchWithMetadata, RecentCommit } from '$lib/server/git/types';
+import { createBranchSchema } from '$lib/schemas/branch';
 
 export type CommandResult = { success: true; branch?: string } | { success: false; error: string };
 
@@ -185,32 +186,26 @@ export const checkoutBranch = command(v.string(), async (branchName): Promise<Co
 	}
 });
 
-// Command to create a new branch
-export const createBranch = command(
-	v.object({
-		name: v.pipe(v.string(), v.nonEmpty('Branch name is required')),
-		startPoint: v.optional(v.string(), 'HEAD')
-	}),
-	async ({ name, startPoint }) => {
-		try {
-			await gitService.createBranch(name, startPoint);
-			await metadataService.updateCheckoutDate(name);
+// Form to create a new branch with validation
+export const createBranch = form(createBranchSchema, async ({ name, startPoint }) => {
+	try {
+		await gitService.createBranch(name, startPoint);
+		await metadataService.updateCheckoutDate(name);
 
-			// Refresh queries that depend on branch list
-			await getBranches().refresh();
-			await getStarredBranches().refresh();
-			await getStats().refresh();
-			await getRecentCommits().refresh();
+		// Refresh queries that depend on branch list
+		await getBranches().refresh();
+		await getStarredBranches().refresh();
+		await getStats().refresh();
+		await getRecentCommits().refresh();
 
-			return { success: true, branch: name };
-		} catch (error) {
-			console.error(`Failed to create branch '${name}':`, error);
-			throw new Error(
-				`Failed to create branch '${name}': ${error instanceof Error ? error.message : 'Unknown error'}`
-			);
-		}
+		return { success: true, branch: name };
+	} catch (error) {
+		console.error(`Failed to create branch '${name}':`, error);
+		throw new Error(
+			`Failed to create branch '${name}': ${error instanceof Error ? error.message : 'Unknown error'}`
+		);
 	}
-);
+});
 
 // Command to toggle branch star status
 export const toggleStar = command(v.string(), async (branchName) => {

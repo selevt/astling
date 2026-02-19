@@ -14,7 +14,8 @@
 		setAutoPrune,
 		dismissPruneSuggestion,
 		backupBranch,
-		restorePatch
+		restorePatch,
+		getTargetBranch
 	} from './branches/data.remote';
 	import BranchCard from '$lib/components/BranchCard.svelte';
 	import FilterControls from '$lib/components/FilterControls.svelte';
@@ -189,19 +190,6 @@
 		} catch (err) {
 			console.error('Failed to checkout:', err);
 			showErrorDialog(getErrorMessage(err));
-		}
-	}
-
-	async function handleCreate(name: string, startPoint: string): Promise<boolean> {
-		try {
-			return await withViewTransition(async () => {
-				await createBranch({ name, startPoint });
-				showCreateForm = false;
-				return true;
-			});
-		} catch (err) {
-			showErrorDialog(getErrorMessage(err));
-			return false;
 		}
 	}
 
@@ -469,7 +457,7 @@
 			onSearchChange={handleSearchChange}
 			onSortChange={handleSortChange}
 			onFindMerged={() => (showMergedDialog = true)}
-			performCreate={handleCreate}
+			{getTargetBranch}
 			bind:showCreateForm
 			totalBranches={statsData?.totalGitBranches ?? 0}
 			starredCount={statsData?.starredBranches ?? 0}
