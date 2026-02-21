@@ -1,4 +1,13 @@
 import type { BranchWithMetadata } from '$lib/server/git/types';
+import type { TreeNode } from '$lib/tree/types';
+import {
+	getFocusedTreePath,
+	setFocusedTreePath,
+	isExpanded,
+	setExpanded,
+	getVisibleNodes,
+	findNodeAndParent
+} from '$lib/tree/treeNav.svelte';
 
 export interface KeyboardNavActions {
 	setFilter: (f: string) => void;
@@ -17,6 +26,8 @@ export interface KeyboardNavActions {
 	isHistoryOpen: () => boolean;
 	closeHistory: () => void;
 	getViewMode: () => 'list' | 'tree';
+	getTreeRoots: () => TreeNode[] | null;
+	setViewMode: (mode: 'list' | 'tree') => void;
 }
 
 export function createKeyboardNav(
@@ -41,10 +52,19 @@ export function createKeyboardNav(
 		}
 	});
 
-	// Scroll selected card into view
+	// Scroll selected branch card into view
 	$effect(() => {
 		if (selectedBranch) {
 			const el = document.querySelector(`[data-branch="${CSS.escape(selectedBranch)}"]`);
+			el?.scrollIntoView({ block: 'nearest' });
+		}
+	});
+
+	// Scroll focused directory node into view
+	$effect(() => {
+		const path = getFocusedTreePath();
+		if (path && path !== selectedBranch) {
+			const el = document.querySelector(`[data-tree-node="${CSS.escape(path)}"]`);
 			el?.scrollIntoView({ block: 'nearest' });
 		}
 	});
@@ -68,6 +88,31 @@ export function createKeyboardNav(
 		selectedBranch = list[newIdx].name;
 	}
 
+	function moveTreeSelection(delta: number) {
+		const roots = actions.getTreeRoots();
+		if (!roots) return;
+		const nodes = getVisibleNodes(roots);
+		if (!nodes.length) return;
+		const focused = getFocusedTreePath() ?? selectedBranch;
+		const idx = nodes.findIndex((n) =>
+			n.kind === 'branch' ? n.branch.name === focused : n.path === focused
+		);
+		const newIdx =
+			idx === -1
+				? delta > 0
+					? 0
+					: nodes.length - 1
+				: Math.max(0, Math.min(nodes.length - 1, idx + delta));
+		const node = nodes[newIdx];
+		if (node.kind === 'branch') {
+			selectedBranch = node.branch.name;
+			setFocusedTreePath(node.branch.name);
+		} else {
+			selectedBranch = null;
+			setFocusedTreePath(node.path);
+		}
+	}
+
 	function jumpFirst() {
 		const list = getBranchList();
 		if (list.length > 0 && selectedIndex !== 0) {
@@ -78,9 +123,39 @@ export function createKeyboardNav(
 		}
 	}
 
+	function jumpTreeFirst() {
+		const roots = actions.getTreeRoots();
+		if (!roots) return;
+		const nodes = getVisibleNodes(roots);
+		if (!nodes.length) return;
+		const node = nodes[0];
+		if (node.kind === 'branch') {
+			selectedBranch = node.branch.name;
+			setFocusedTreePath(node.branch.name);
+		} else {
+			selectedBranch = null;
+			setFocusedTreePath(node.path);
+		}
+	}
+
 	function jumpLast() {
 		const list = getBranchList();
 		if (list.length > 0) selectedBranch = list[list.length - 1].name;
+	}
+
+	function jumpTreeLast() {
+		const roots = actions.getTreeRoots();
+		if (!roots) return;
+		const nodes = getVisibleNodes(roots);
+		if (!nodes.length) return;
+		const node = nodes[nodes.length - 1];
+		if (node.kind === 'branch') {
+			selectedBranch = node.branch.name;
+			setFocusedTreePath(node.branch.name);
+		} else {
+			selectedBranch = null;
+			setFocusedTreePath(node.path);
+		}
 	}
 
 	function getSelectedBranch(): BranchWithMetadata | undefined {
@@ -123,7 +198,6 @@ export function createKeyboardNav(
 			active instanceof HTMLButtonElement || active instanceof HTMLAnchorElement;
 		if (isInteractive && (e.key === 'Enter' || e.key === ' ')) return;
 
-		// In tree mode, skip list-navigation keys
 		const inTreeMode = actions.getViewMode() !== 'list';
 
 		// Handle second key in g-prefix sequence
@@ -134,7 +208,11 @@ export function createKeyboardNav(
 
 			switch (second) {
 				case 'g':
-					jumpFirst();
+					if (inTreeMode) {
+						jumpTreeFirst();
+					} else {
+						jumpFirst();
+					}
 					break;
 				case 'a':
 					actions.setFilter('all');
@@ -152,18 +230,23 @@ export function createKeyboardNav(
 		switch (e.key) {
 			case 'j':
 			case 'ArrowDown':
-				if (inTreeMode) break;
 				e.preventDefault();
-				moveSelection(1);
+				if (inTreeMode) {
+					moveTreeSelection(1);
+				} else {
+					moveSelection(1);
+				}
 				break;
 			case 'k':
 			case 'ArrowUp':
-				if (inTreeMode) break;
 				e.preventDefault();
-				moveSelection(-1);
+				if (inTreeMode) {
+					moveTreeSelection(-1);
+				} else {
+					moveSelection(-1);
+				}
 				break;
 			case 'g':
-				if (inTreeMode) break;
 				e.preventDefault();
 				pendingKey = 'g';
 				timeoutId = setTimeout(() => {
@@ -172,9 +255,12 @@ export function createKeyboardNav(
 				}, 500);
 				break;
 			case 'G':
-				if (inTreeMode) break;
 				e.preventDefault();
-				jumpLast();
+				if (inTreeMode) {
+					jumpTreeLast();
+				} else {
+					jumpLast();
+				}
 				break;
 			case '/':
 				e.preventDefault();
@@ -240,12 +326,49 @@ export function createKeyboardNav(
 				if (b) actions.backupBranch(b);
 				break;
 			}
+			case 'h':
+				if (inTreeMode) {
+					e.preventDefault();
+					const p = getFocusedTreePath();
+					if (p) {
+						const roots = actions.getTreeRoots();
+						const result = roots ? findNodeAndParent(roots, p) : null;
+						if (result) {
+							const { node, parent } = result;
+							if (node.kind === 'dir' && isExpanded(node.path)) {
+								// Expanded dir: collapse it
+								setExpanded(node.path, false);
+							} else if (parent) {
+								// Branch or collapsed dir: collapse parent and move focus there
+								setExpanded(parent.path, false);
+								setFocusedTreePath(parent.path);
+								selectedBranch = null;
+							}
+						}
+					}
+				}
+				break;
 			case 'l': {
 				e.preventDefault();
 				const b = getSelectedBranch();
-				if (b) actions.toggleHistory(b);
+				if (b) {
+					actions.toggleHistory(b);
+				} else if (inTreeMode) {
+					const p = getFocusedTreePath();
+					if (p) setExpanded(p, true);
+				}
 				break;
 			}
+			case 'v':
+				e.preventDefault();
+				if (actions.getViewMode() === 'list') {
+					actions.setViewMode('tree');
+					if (selectedBranch) setFocusedTreePath(selectedBranch);
+				} else {
+					actions.setViewMode('list');
+					setFocusedTreePath(null);
+				}
+				break;
 			case 'Escape':
 				// Let open dialogs handle Escape natively
 				if (document.querySelector('dialog[open]')) return;
@@ -255,6 +378,9 @@ export function createKeyboardNav(
 					showHelp = false;
 				} else if (actions.isHistoryOpen()) {
 					actions.closeHistory();
+				} else if (inTreeMode && getFocusedTreePath() !== null) {
+					setFocusedTreePath(null);
+					selectedBranch = null;
 				} else if (selectedBranch !== null) {
 					selectedBranch = null;
 				}
@@ -280,6 +406,9 @@ export function createKeyboardNav(
 		},
 		get selectedIndex() {
 			return selectedIndex;
+		},
+		get focusedTreePath() {
+			return getFocusedTreePath();
 		},
 		handleKeydown,
 		getSelectedBranch

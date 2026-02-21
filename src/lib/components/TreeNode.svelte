@@ -4,6 +4,7 @@
 	import BranchCard from './BranchCard.svelte';
 	import DirectoryCard from './DirectoryCard.svelte';
 	import TreeNodeComponent from './TreeNode.svelte';
+	import { isExpanded, toggleExpanded } from '$lib/tree/treeNav.svelte';
 
 	let {
 		node,
@@ -21,7 +22,8 @@
 		onEditComplete,
 		renamingBranchName,
 		onRenameComplete,
-		onError
+		onError,
+		focusedTreePath
 	}: {
 		node: TreeNode;
 		depth?: number;
@@ -39,9 +41,8 @@
 		renamingBranchName: string | null;
 		onRenameComplete: () => void;
 		onError: (message: string) => void;
+		focusedTreePath: string | null;
 	} = $props();
-
-	let expanded = $state(true);
 </script>
 
 {#if node.kind === 'branch'}
@@ -66,8 +67,8 @@
 		/>
 	</div>
 {:else}
-	<DirectoryCard {node} {expanded} {depth} onToggleExpand={() => (expanded = !expanded)} />
-	{#if expanded}
+	<DirectoryCard {node} expanded={isExpanded(node.path)} {depth} onToggleExpand={() => toggleExpanded(node.path)} selected={focusedTreePath === node.path} />
+	{#if isExpanded(node.path)}
 		<div class="dir-children">
 			{#each node.children as child (child.path)}
 				<TreeNodeComponent
@@ -87,6 +88,7 @@
 					{renamingBranchName}
 					{onRenameComplete}
 					{onError}
+					{focusedTreePath}
 				/>
 			{/each}
 		</div>

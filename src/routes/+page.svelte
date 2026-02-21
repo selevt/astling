@@ -29,6 +29,7 @@
 	import CommitDetailDialog from '$lib/components/CommitDetailDialog.svelte';
 	import type { BranchWithMetadata, RecentCommit } from '$lib/server/git/types';
 	import { createKeyboardNav } from '$lib/keyboard/handler.svelte';
+	import { expandAncestors } from '$lib/tree/treeNav.svelte';
 	import HelpOverlay from '$lib/keyboard/HelpOverlay.svelte';
 	import faviconUrl from '$lib/assets/favicon.svg';
 	import { invalidateAll } from '$app/navigation';
@@ -343,6 +344,15 @@
 		isHistoryOpen: () => showHistoryFor !== null,
 		closeHistory: () => {
 			showHistoryFor = null;
+		},
+		getTreeRoots: () => branchTree?.roots ?? null,
+		setViewMode: (mode) => {
+			viewMode = mode;
+			showHistoryFor = null;
+			if (mode === 'tree' && nav.selectedBranch) {
+				const tree = buildTree(branchListPlain as BranchWithMetadata[]);
+				expandAncestors(tree.roots, nav.selectedBranch);
+			}
 		}
 	});
 </script>
@@ -446,6 +456,10 @@
 			starredCount={statsData?.starredBranches ?? 0}
 			{viewMode}
 			onViewModeChange={(mode) => {
+				if (mode === 'tree' && nav.selectedBranch) {
+					const tree = buildTree(branchListPlain as BranchWithMetadata[]);
+					expandAncestors(tree.roots, nav.selectedBranch);
+				}
 				viewMode = mode;
 				showHistoryFor = null;
 			}}
@@ -557,6 +571,7 @@
 					{renamingBranchName}
 					onRenameComplete={() => (renamingBranchName = null)}
 					onError={showErrorDialog}
+					focusedTreePath={nav.focusedTreePath}
 				/>
 			{/if}
 		{/if}

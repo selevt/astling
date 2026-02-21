@@ -18,7 +18,8 @@
 		onEditComplete,
 		renamingBranchName,
 		onRenameComplete,
-		onError
+		onError,
+		focusedTreePath
 	}: {
 		roots: TreeNode[];
 		showHistoryFor: string | null;
@@ -35,6 +36,7 @@
 		renamingBranchName: string | null;
 		onRenameComplete: () => void;
 		onError: (message: string) => void;
+		focusedTreePath: string | null;
 	} = $props();
 </script>
 
@@ -57,6 +59,7 @@
 			{renamingBranchName}
 			{onRenameComplete}
 			{onError}
+			{focusedTreePath}
 		/>
 	{/each}
 </div>

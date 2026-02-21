@@ -61,6 +61,17 @@
 				<dd>Find merged</dd>
 			</dl>
 		</div>
+		<div class="help-section">
+			<h3>Tree View</h3>
+			<dl>
+				<dt><kbd>v</kbd></dt>
+				<dd>Toggle list / tree view</dd>
+				<dt><kbd>h</kbd></dt>
+				<dd>Collapse directory</dd>
+				<dt><kbd>l</kbd></dt>
+				<dd>Expand directory (on dir node)</dd>
+			</dl>
+		</div>
 	</div>
 	<p class="help-hint">Press <kbd>?</kbd> or <kbd>Esc</kbd> to close</p>
 </Dialog>

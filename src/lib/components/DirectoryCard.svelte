@@ -6,16 +6,18 @@
 		node,
 		expanded,
 		depth,
-		onToggleExpand
+		onToggleExpand,
+		selected
 	}: {
 		node: DirectoryNode;
 		expanded: boolean;
 		depth: number;
 		onToggleExpand: () => void;
+		selected?: boolean;
 	} = $props();
 </script>
 
-<div class="dir-card" style="--tree-depth: {depth}">
+<div class="dir-card" class:selected={selected} data-tree-node={node.path} style="--tree-depth: {depth}">
 	<div class="dir-header">
 		<button class="expand-btn" onclick={onToggleExpand} aria-expanded={expanded}>
 			<span class="chevron">{expanded ? '▾' : '▸'}</span>
@@ -97,5 +99,11 @@
 		border-radius: 10px;
 		padding: 1px 7px;
 		font-weight: 500;
+	}
+
+	.dir-card.selected {
+		border-color: var(--color-accent);
+		outline: 2px solid var(--color-accent);
+		outline-offset: -1px;
 	}
 </style>
