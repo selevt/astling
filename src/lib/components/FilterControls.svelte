@@ -54,12 +54,12 @@
 	let isCreating = $state(false);
 
 	let repoPathInfo: { path: string; valid: boolean } | null = $state(null);
-	let editingRepoPath = $state(false);
 	let newRepoPath = $state('');
 
 	let targetBranch = $state('main');
-	let editingTargetBranch = $state(false);
 	let newTargetBranch = $state('');
+
+	let editingConfig = $state(false);
 
 	let createBranchForm = $derived(createBranch.preflight(createBranchSchema));
 
@@ -96,24 +96,38 @@
 		}
 	});
 
-	async function saveTargetBranch() {
+	async function saveConfig() {
+		let repoOk = true;
+		let branchOk = true;
+
+		try {
+			await setRepoPath(newRepoPath.trim());
+		} catch (err) {
+			alert(`Failed to set repo path: ${err instanceof Error ? err.message : String(err)}`);
+			repoOk = false;
+		}
+
 		try {
 			await setTargetBranch(newTargetBranch.trim());
 			targetBranch = newTargetBranch.trim();
-			editingTargetBranch = false;
 		} catch (err) {
 			alert(`Failed to set target branch: ${err instanceof Error ? err.message : String(err)}`);
+			branchOk = false;
+		}
+
+		if (repoOk) {
+			await refreshRepoInfo();
+		}
+
+		if (repoOk && branchOk) {
+			editingConfig = false;
 		}
 	}
 
-	async function saveRepoPath() {
-		try {
-			await setRepoPath(newRepoPath.trim());
-			editingRepoPath = false;
-			await refreshRepoInfo();
-		} catch (err) {
-			alert(`Failed to set repo path: ${err instanceof Error ? err.message : String(err)}`);
-		}
+	function cancelConfig() {
+		editingConfig = false;
+		newRepoPath = repoPathInfo?.path ?? '';
+		newTargetBranch = targetBranch;
 	}
 
 	const filters = $derived([
@@ -130,68 +144,47 @@
 
 <div class="controls">
 	<div class="repo-path-row">
-		{#if repoPathInfo !== null}
-			{#if !editingRepoPath}
-				<div class="repo-info">
-					<small>Repo:</small>
-					<code class="repo-path">{repoPathInfo?.path ?? ''}</code>
-					{#if !repoPathInfo?.valid}
-						<span class="repo-invalid">(not a git repo)</span>
-					{/if}
-				</div>
-				<div class="repo-actions">
-					<button
-						class="edit-repo-btn"
-						onclick={() => {
-							editingRepoPath = true;
-						}}>Change</button
-					>
-				</div>
-			{:else}
-				<div class="repo-edit">
-					<input type="text" bind:value={newRepoPath} class="repo-input" />
-					<button class="save-repo-btn" onclick={saveRepoPath}>Save</button>
-					<button
-						class="cancel-repo-btn"
-						onclick={() => {
-							editingRepoPath = false;
-							newRepoPath = repoPathInfo?.path ?? '';
-						}}>Cancel</button
-					>
-				</div>
-			{/if}
-		{/if}
-	</div>
-	<div class="repo-path-row">
-		{#if !editingTargetBranch}
+		{#if !editingConfig}
 			<div class="repo-info">
-				<small>Target:</small>
-				<code class="repo-path">{targetBranch}</code>
+				{#if repoPathInfo !== null}
+					<span class="config-item">
+						<small>Repo:</small>
+						<code class="repo-path">{repoPathInfo.path}</code>
+						{#if !repoPathInfo.valid}
+							<span class="repo-invalid">(not a git repo)</span>
+						{/if}
+					</span>
+				{/if}
+				<span class="config-separator">|</span>
+				<span class="config-item">
+					<small>Target:</small>
+					<code class="repo-path">{targetBranch}</code>
+				</span>
 			</div>
 			<div class="repo-actions">
-				<button
-					class="edit-repo-btn"
-					onclick={() => {
-						editingTargetBranch = true;
-					}}>Change</button
-				>
+				<button class="edit-repo-btn" onclick={() => { editingConfig = true; }}>Change</button>
 			</div>
 		{:else}
-			<div class="repo-edit">
-				<input type="text" bind:value={newTargetBranch} class="repo-input" />
-				<button class="save-repo-btn" onclick={saveTargetBranch}>Save</button>
-				<button
-					class="cancel-repo-btn"
-					onclick={() => {
-						editingTargetBranch = false;
-						newTargetBranch = targetBranch;
-					}}>Cancel</button
-				>
+			<div class="config-edit">
+				<div class="config-edit-fields">
+					<label class="config-edit-label">
+						<small>Repo:</small>
+						<input type="text" bind:value={newRepoPath} class="repo-input" />
+					</label>
+					<label class="config-edit-label">
+						<small>Target:</small>
+						<input type="text" bind:value={newTargetBranch} class="repo-input" />
+					</label>
+				</div>
+				<div class="config-edit-actions">
+					<button class="save-repo-btn" onclick={saveConfig}>Save</button>
+					<button class="cancel-repo-btn" onclick={cancelConfig}>Cancel</button>
+				</div>
 			</div>
 		{/if}
 	</div>
 	<div class="filters">
-		{#each filters as filter}
+		{#each filters as filter (filter.value)}
 			<button
 				class="filter-btn"
 				class:active={currentFilter === filter.value}
@@ -251,7 +244,7 @@
 				onchange={(e) => onSortChange(e.currentTarget.value)}
 				class="sort-select"
 			>
-				{#each sortOptions as option}
+				{#each sortOptions as option (option.value)}
 					<option value={option.value}>{option.label}</option>
 				{/each}
 			</select>
@@ -295,7 +288,7 @@
 					placeholder="feature/new-feature"
 					class="dialog-input"
 				/>
-				{#each createBranchForm.fields.name.issues() as issue}
+				{#each createBranchForm.fields.name.issues() as issue (issue.message)}
 					<p class="issue">{issue.message}</p>
 				{/each}
 			</div>
@@ -517,6 +510,18 @@
 		font-size: 13px;
 		color: var(--color-text-secondary);
 		min-width: 0;
+		flex-wrap: wrap;
+	}
+
+	.config-item {
+		display: flex;
+		align-items: center;
+		gap: 4px;
+	}
+
+	.config-separator {
+		color: var(--color-border-input);
+		user-select: none;
 	}
 
 	.repo-path {
@@ -554,6 +559,36 @@
 	.edit-repo-btn:hover {
 		background: var(--color-bg-hover);
 		color: var(--color-text-primary);
+	}
+
+	.config-edit {
+		display: flex;
+		align-items: flex-end;
+		gap: 12px;
+		flex: 1;
+	}
+
+	.config-edit-fields {
+		display: flex;
+		gap: 12px;
+		flex: 1;
+		flex-wrap: wrap;
+	}
+
+	.config-edit-label {
+		display: flex;
+		align-items: center;
+		gap: 6px;
+		flex: 1;
+		min-width: 160px;
+		font-size: 13px;
+		color: var(--color-text-secondary);
+	}
+
+	.config-edit-actions {
+		display: flex;
+		gap: 6px;
+		flex-shrink: 0;
 	}
 
 	.repo-edit {
