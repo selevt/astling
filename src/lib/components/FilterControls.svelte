@@ -263,7 +263,7 @@
 			title="Find branches merged into target"
 		>
 			<MergeIcon />
-			Find Merged>
+			Find Merged
 		</button>
 
 		<button class="create-branch-btn" onclick={() => (showCreateForm = !showCreateForm)}>
