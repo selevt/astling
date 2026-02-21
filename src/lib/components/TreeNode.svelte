@@ -67,7 +67,13 @@
 		/>
 	</div>
 {:else}
-	<DirectoryCard {node} expanded={isExpanded(node.path)} {depth} onToggleExpand={() => toggleExpanded(node.path)} selected={focusedTreePath === node.path} />
+	<DirectoryCard
+		{node}
+		expanded={isExpanded(node.path)}
+		{depth}
+		onToggleExpand={() => toggleExpanded(node.path)}
+		selected={focusedTreePath === node.path}
+	/>
 	{#if isExpanded(node.path)}
 		<div class="dir-children">
 			{#each node.children as child (child.path)}

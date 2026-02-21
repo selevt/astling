@@ -164,7 +164,12 @@
 				</span>
 			</div>
 			<div class="repo-actions">
-				<button class="edit-repo-btn" onclick={() => { editingConfig = true; }}>Change</button>
+				<button
+					class="edit-repo-btn"
+					onclick={() => {
+						editingConfig = true;
+					}}>Change</button
+				>
 			</div>
 		{:else}
 			<div class="config-edit">

@@ -17,7 +17,7 @@
 	} = $props();
 </script>
 
-<div class="dir-card" class:selected={selected} data-tree-node={node.path} style="--tree-depth: {depth}">
+<div class="dir-card" class:selected data-tree-node={node.path} style="--tree-depth: {depth}">
 	<div class="dir-header">
 		<button class="expand-btn" onclick={onToggleExpand} aria-expanded={expanded}>
 			<span class="chevron">{expanded ? '▾' : '▸'}</span>

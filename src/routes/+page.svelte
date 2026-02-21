@@ -356,11 +356,16 @@
 		}
 	});
 
-	function handleBranchCreated(name: string) {
+	async function handleBranchCreated(name: string) {
 		const parts = name.split('/');
 		for (let i = 1; i < parts.length; i++) {
 			setExpanded(parts.slice(0, i).join('/') + '/', true);
 		}
+		nav.selectedBranch = name;
+		await tick();
+		requestAnimationFrame(() => {
+			document.querySelector(`[data-branch="${name}"]`)?.scrollIntoView({ block: 'nearest' });
+		});
 	}
 </script>
 
@@ -463,7 +468,7 @@
 			starredCount={statsData?.starredBranches ?? 0}
 			{viewMode}
 			onBranchCreated={handleBranchCreated}
-		onViewModeChange={(mode) => {
+			onViewModeChange={(mode) => {
 				if (mode === 'tree' && nav.selectedBranch) {
 					const tree = buildTree(branchListPlain as BranchWithMetadata[]);
 					expandAncestors(tree.roots, nav.selectedBranch);
