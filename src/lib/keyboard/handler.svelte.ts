@@ -8,6 +8,7 @@ export interface KeyboardNavActions {
 	deleteSelected: (branch: BranchWithMetadata, force?: boolean) => void;
 	refresh: () => void;
 	createBranch: () => void;
+	createBranchFrom: (branch: BranchWithMetadata) => void;
 	editDescription: (branch: BranchWithMetadata) => void;
 	renameBranch: (branch: BranchWithMetadata) => void;
 	findMerged: () => void;
@@ -207,6 +208,12 @@ export function createKeyboardNav(
 				e.preventDefault();
 				actions.createBranch();
 				break;
+			case 'C': {
+				e.preventDefault();
+				const b = getSelectedBranch();
+				if (b) actions.createBranchFrom(b);
+				break;
+			}
 			case 'e': {
 				e.preventDefault();
 				const b = getSelectedBranch();

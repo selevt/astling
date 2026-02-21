@@ -25,6 +25,7 @@
 		getTargetBranch,
 		onFindMerged,
 		showCreateForm = $bindable(false),
+		createStartPoint = $bindable<string | null>(null),
 		totalBranches = 0,
 		starredCount = 0
 	}: {
@@ -37,6 +38,7 @@
 		getTargetBranch: () => Promise<string>;
 		onFindMerged?: () => void;
 		showCreateForm?: boolean;
+		createStartPoint?: string | null;
 		totalBranches?: number;
 		starredCount?: number;
 	} = $props();
@@ -45,7 +47,6 @@
 	let newBranchStart = $state('HEAD');
 	let isCreating = $state(false);
 
-	let createBranchForm = $derived(createBranch.preflight(createBranchSchema));
 
 	let repoPathInfo: { path: string; valid: boolean } | null = $state(null);
 	let editingRepoPath = $state(false);
@@ -54,6 +55,16 @@
 	let targetBranch = $state('main');
 	let editingTargetBranch = $state(false);
 	let newTargetBranch = $state('');
+
+	let createBranchForm = $derived(createBranch.preflight(createBranchSchema));
+
+	$effect(() => {
+		if (showCreateForm && createStartPoint) {
+			createBranchForm.fields.startPoint.set(createStartPoint);
+		} else {
+			createBranchForm.fields.startPoint.set(targetBranch);
+		}
+	});
 
 	async function refreshRepoInfo() {
 		try {
@@ -75,10 +86,6 @@
 			targetBranch = tb;
 			newTargetBranch = tb;
 			newBranchStart = tb;
-
-			// TODO: this is weird. wihtout this, the select starts with no value, even though the UI
-			// shows the default. And if doing validate(), without it, the select value disappears.
-			createBranchForm.fields.startPoint.set(tb);
 		} catch (err) {
 			console.error('Failed to fetch target branch:', err);
 		}
@@ -252,6 +259,7 @@
 				const issues = createBranchForm.fields?.allIssues() ?? [];
 				if (issues.length === 0) {
 					showCreateForm = false;
+					createStartPoint = null;
 				}
 			})}
 			oninput={() => createBranchForm.validate({ preflightOnly: true })}
@@ -276,6 +284,9 @@
 					id="start-point"
 					class="dialog-select"
 				>
+					{#if createStartPoint && createStartPoint !== targetBranch && createStartPoint !== 'HEAD'}
+						<option value={createStartPoint}>{createStartPoint}</option>
+					{/if}
 					<option value={targetBranch}>{targetBranch}</option>
 					<option value="HEAD">HEAD (current commit)</option>
 				</select>
@@ -284,7 +295,7 @@
 			<div class="dialog-actions">
 				<button
 					type="button"
-					onclick={() => (showCreateForm = false)}
+					onclick={() => { showCreateForm = false; createStartPoint = null; }}
 					class="dialog-btn dialog-btn-cancel"
 				>
 					Cancel

@@ -50,6 +50,7 @@
 	let isLoading = $state(false);
 	let error = $state<string | null>(null);
 	let showCreateForm = $state(false);
+	let createStartPoint = $state<string | null>(null);
 	let editingBranchName = $state<string | null>(null);
 	let renamingBranchName = $state<string | null>(null);
 	let showError = $state(false);
@@ -314,6 +315,10 @@
 		createBranch: () => {
 			showCreateForm = true;
 		},
+		createBranchFrom: (b) => {
+			createStartPoint = b.name;
+			showCreateForm = true;
+		},
 		editDescription: (b) => {
 			editingBranchName = b.name;
 		},
@@ -428,6 +433,7 @@
 			onFindMerged={() => (showMergedDialog = true)}
 			{getTargetBranch}
 			bind:showCreateForm
+			bind:createStartPoint
 			totalBranches={statsData?.totalGitBranches ?? 0}
 			starredCount={statsData?.starredBranches ?? 0}
 		/>

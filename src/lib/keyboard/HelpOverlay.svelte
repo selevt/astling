@@ -44,6 +44,8 @@
 				<dd>Toggle commit history</dd>
 				<dt><kbd>c</kbd></dt>
 				<dd>Create branch</dd>
+				<dt><kbd>C</kbd></dt>
+				<dd>Create branch from selected</dd>
 				<dt><kbd>r</kbd></dt>
 				<dd>Refresh</dd>
 			</dl>
