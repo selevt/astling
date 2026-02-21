@@ -60,7 +60,6 @@
 		onToggleHistory?: () => void;
 	} = $props();
 	let isBackingUp = $state(false);
-	let showDescription = $state(false);
 	let isLoading = $state(false);
 
 	async function handleCheckout() {
@@ -163,7 +162,6 @@
 
 	function handleSaveDescription() {
 		showDescriptionForm = false;
-		showDescription = true;
 		onEditComplete?.();
 	}
 
@@ -236,6 +234,16 @@
 				<EditIcon />
 			</button>
 			<button
+				class="description-btn"
+				onclick={(e) => {
+					e.stopPropagation();
+					handleEditDescription();
+				}}
+				title="Edit description"
+			>
+				<FileTextIcon />
+			</button>
+			<button
 				class="history-btn"
 				class:active={showCommitHistory}
 				onclick={(e) => {
@@ -270,19 +278,9 @@
 		<span class="commit-hash">{branch.hash.slice(0, 8)}</span>
 	</div>
 
-	<div class="description-section">
-		<button
-			class="description-toggle"
-			onclick={() =>
-				branch.description ? (showDescription = !showDescription) : handleEditDescription()}
-		>
-			<FileTextIcon />
-			{branch.description ? (showDescription ? 'Hide' : 'Edit') : 'Add'} Description
-		</button>
-		{#if branch.description && showDescription}
-			<p class="description">{branch.description}</p>
-		{/if}
-	</div>
+	{#if branch.description}
+		<p class="description">{branch.description}</p>
+	{/if}
 
 	{#if showDescriptionForm}
 		<DescriptionForm
@@ -400,6 +398,7 @@
 	.checkout-btn,
 	.delete-btn,
 	.rename-btn,
+	.description-btn,
 	.backup-btn,
 	.history-btn {
 		padding: 6px 12px;
@@ -443,7 +442,8 @@
 		background: var(--color-bg-hover);
 	}
 
-	.rename-btn {
+	.rename-btn,
+	.description-btn {
 		color: var(--color-text-secondary);
 		display: flex;
 		align-items: center;
@@ -454,6 +454,7 @@
 	}
 
 	.rename-btn:hover,
+	.description-btn:hover,
 	.backup-btn:hover {
 		color: var(--color-accent-blue);
 		border-color: var(--color-accent-blue);
@@ -549,27 +550,6 @@
 		padding: 2px 6px;
 		border-radius: 4px;
 		margin-left: 8px;
-	}
-
-	.description-section {
-		margin-top: 12px;
-	}
-
-	.description-toggle {
-		background: none;
-		border: none;
-		color: var(--color-accent-blue);
-		cursor: pointer;
-		font-size: 12px;
-		padding: 4px 0;
-		text-decoration: underline;
-		display: flex;
-		align-items: center;
-		gap: 5px;
-	}
-
-	.description-toggle:hover {
-		color: var(--color-accent-blue-hover);
 	}
 
 	.description {
