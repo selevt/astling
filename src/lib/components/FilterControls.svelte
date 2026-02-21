@@ -13,6 +13,8 @@
 	import SearchIcon from '$lib/icons/SearchIcon.svelte';
 	import MergeIcon from '$lib/icons/MergeIcon.svelte';
 	import PlusIcon from '$lib/icons/PlusIcon.svelte';
+	import ListIcon from '$lib/icons/ListIcon.svelte';
+	import TreeIcon from '$lib/icons/TreeIcon.svelte';
 
 	// Props
 	let {
@@ -27,7 +29,9 @@
 		showCreateForm = $bindable(false),
 		createStartPoint = $bindable<string | null>(null),
 		totalBranches = 0,
-		starredCount = 0
+		starredCount = 0,
+		viewMode = 'list' as 'list' | 'tree',
+		onViewModeChange
 	}: {
 		currentFilter: string;
 		searchTerm: string;
@@ -41,6 +45,8 @@
 		createStartPoint?: string | null;
 		totalBranches?: number;
 		starredCount?: number;
+		viewMode?: 'list' | 'tree';
+		onViewModeChange?: (mode: 'list' | 'tree') => void;
 	} = $props();
 
 	let newBranchName = $state('');
@@ -202,6 +208,24 @@
 				<span class="filter-label">{filter.label}</span>
 			</button>
 		{/each}
+		<div class="view-toggle" role="group" aria-label="View mode">
+			<button
+				class="filter-btn"
+				class:active={viewMode === 'list'}
+				onclick={() => onViewModeChange?.('list')}
+				title="List view"
+			>
+				<ListIcon />
+			</button>
+			<button
+				class="filter-btn"
+				class:active={viewMode === 'tree'}
+				onclick={() => onViewModeChange?.('tree')}
+				title="Tree view"
+			>
+				<TreeIcon />
+			</button>
+		</div>
 	</div>
 
 	<div class="search-sort">
@@ -363,6 +387,12 @@
 	.filter-label {
 		font-size: 13px;
 		font-weight: 500;
+	}
+
+	.view-toggle {
+		display: flex;
+		gap: 4px;
+		margin-left: auto;
 	}
 
 	.search-sort {

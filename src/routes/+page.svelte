@@ -21,6 +21,8 @@
 	import BranchCard from '$lib/components/BranchCard.svelte';
 	import CommitList from '$lib/components/CommitList.svelte';
 	import FilterControls from '$lib/components/FilterControls.svelte';
+	import BranchTreeView from '$lib/components/BranchTreeView.svelte';
+	import { buildTree } from '$lib/tree/buildTree';
 	import ErrorDialog from '$lib/components/ErrorDialog.svelte';
 	import DeleteConfirmDialog from '$lib/components/DeleteConfirmDialog.svelte';
 	import MergedBranchesDialog from '$lib/components/MergedBranchesDialog.svelte';
@@ -44,6 +46,7 @@
 	}
 
 	// State
+	let viewMode = $state<'list' | 'tree'>('list');
 	let filter = $state('all');
 	let searchTerm = $state('');
 	let sortBy = $state('recent');
@@ -101,6 +104,10 @@
 	let pruneInfo = $derived(await getStaleBranches());
 	let isPruning = $state(false);
 	let branchCommits = $derived(showHistoryFor ? await getBranchCommits(showHistoryFor) : []);
+	let branchTree = $derived.by(() => {
+		if (viewMode !== 'tree') return null;
+		return buildTree(branchListPlain as BranchWithMetadata[]);
+	});
 
 	// Compose visible branch list as an async-derived signal. Template will
 	// await it where needed.
@@ -297,6 +304,7 @@
 			filter = f;
 		},
 		focusSearch: () => document.getElementById('branch-search')?.focus(),
+		getViewMode: () => viewMode,
 		checkoutSelected: (b) => {
 			if (!b.current) handleCheckout(b.name);
 		},
@@ -436,6 +444,11 @@
 			bind:createStartPoint
 			totalBranches={statsData?.totalGitBranches ?? 0}
 			starredCount={statsData?.starredBranches ?? 0}
+			{viewMode}
+			onViewModeChange={(mode) => {
+				viewMode = mode;
+				showHistoryFor = null;
+			}}
 		/>
 
 		{#if error}
@@ -492,7 +505,7 @@
 						>
 					{/if}
 				</div>
-			{:else}
+			{:else if viewMode === 'list'}
 				<div class="branches-list">
 					{#each branchListPlain as BranchWithMetadata[] as branch (branch.name)}
 						<BranchCard
@@ -521,6 +534,30 @@
 						/>
 					{/each}
 				</div>
+			{:else if branchTree}
+				<BranchTreeView
+					roots={branchTree.roots}
+					{showHistoryFor}
+					{branchCommits}
+					onToggleHistory={(path) => {
+						showHistoryFor = showHistoryFor === path ? null : path;
+					}}
+					onCommitClick={(hash, message) => {
+						selectedCommitHash = hash;
+						selectedCommitMessage = message;
+						showCommitDialog = true;
+					}}
+					selectedBranch={nav.selectedBranch}
+					onSelect={(name) => (nav.selectedBranch = name)}
+					onCheckout={handleCheckout}
+					onToggleStar={handleToggleStar}
+					onDelete={(name) => handleDelete(name)}
+					{editingBranchName}
+					onEditComplete={() => (editingBranchName = null)}
+					{renamingBranchName}
+					onRenameComplete={() => (renamingBranchName = null)}
+					onError={showErrorDialog}
+				/>
 			{/if}
 		{/if}
 	</section>

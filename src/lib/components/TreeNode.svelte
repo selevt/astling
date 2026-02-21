@@ -1,0 +1,103 @@
+<script lang="ts">
+	import type { TreeNode } from '$lib/tree/types';
+	import type { BranchWithMetadata, RecentCommit } from '$lib/server/git/types';
+	import BranchCard from './BranchCard.svelte';
+	import DirectoryCard from './DirectoryCard.svelte';
+	import TreeNodeComponent from './TreeNode.svelte';
+
+	let {
+		node,
+		depth = 0,
+		showHistoryFor,
+		branchCommits,
+		onToggleHistory,
+		onCommitClick,
+		selectedBranch,
+		onSelect,
+		onCheckout,
+		onToggleStar,
+		onDelete,
+		editingBranchName,
+		onEditComplete,
+		renamingBranchName,
+		onRenameComplete,
+		onError
+	}: {
+		node: TreeNode;
+		depth?: number;
+		showHistoryFor: string | null;
+		branchCommits: RecentCommit[];
+		onToggleHistory: (path: string) => void;
+		onCommitClick?: (hash: string, message: string) => void;
+		selectedBranch: string | null;
+		onSelect: (name: string) => void;
+		onCheckout: (name: string) => void;
+		onToggleStar: (name: string) => void;
+		onDelete: (name: string) => void;
+		editingBranchName: string | null;
+		onEditComplete: () => void;
+		renamingBranchName: string | null;
+		onRenameComplete: () => void;
+		onError: (message: string) => void;
+	} = $props();
+
+	let expanded = $state(true);
+</script>
+
+{#if node.kind === 'branch'}
+	<div style="padding-left: calc({depth} * 20px)">
+		<BranchCard
+			branch={node.branch}
+			selected={selectedBranch === node.branch.name}
+			{onSelect}
+			{onCheckout}
+			{onToggleStar}
+			{onDelete}
+			showDescriptionForm={editingBranchName === node.branch.name}
+			{onEditComplete}
+			showRenameForm={renamingBranchName === node.branch.name}
+			{onRenameComplete}
+			{onError}
+			showCommitHistory={showHistoryFor === node.branch.name}
+			commitHistory={showHistoryFor === node.branch.name ? branchCommits : []}
+			commitHistoryLoading={false}
+			onToggleHistory={() => onToggleHistory(node.branch.name)}
+			{onCommitClick}
+		/>
+	</div>
+{:else}
+	<DirectoryCard {node} {expanded} {depth} onToggleExpand={() => (expanded = !expanded)} />
+	{#if expanded}
+		<div class="dir-children">
+			{#each node.children as child (child.path)}
+				<TreeNodeComponent
+					node={child}
+					depth={depth + 1}
+					{showHistoryFor}
+					{branchCommits}
+					{onToggleHistory}
+					{onCommitClick}
+					{selectedBranch}
+					{onSelect}
+					{onCheckout}
+					{onToggleStar}
+					{onDelete}
+					{editingBranchName}
+					{onEditComplete}
+					{renamingBranchName}
+					{onRenameComplete}
+					{onError}
+				/>
+			{/each}
+		</div>
+	{/if}
+{/if}
+
+<style>
+	.dir-children {
+		padding-left: 12px;
+		border-left: 1px solid var(--color-border);
+		margin-left: 16px;
+		margin-bottom: 4px;
+	}
+</style>

@@ -16,6 +16,7 @@ export interface KeyboardNavActions {
 	toggleHistory: (branch: BranchWithMetadata) => void;
 	isHistoryOpen: () => boolean;
 	closeHistory: () => void;
+	getViewMode: () => 'list' | 'tree';
 }
 
 export function createKeyboardNav(
@@ -122,6 +123,9 @@ export function createKeyboardNav(
 			active instanceof HTMLButtonElement || active instanceof HTMLAnchorElement;
 		if (isInteractive && (e.key === 'Enter' || e.key === ' ')) return;
 
+		// In tree mode, skip list-navigation keys
+		const inTreeMode = actions.getViewMode() !== 'list';
+
 		// Handle second key in g-prefix sequence
 		if (pendingKey === 'g') {
 			e.preventDefault();
@@ -148,15 +152,18 @@ export function createKeyboardNav(
 		switch (e.key) {
 			case 'j':
 			case 'ArrowDown':
+				if (inTreeMode) break;
 				e.preventDefault();
 				moveSelection(1);
 				break;
 			case 'k':
 			case 'ArrowUp':
+				if (inTreeMode) break;
 				e.preventDefault();
 				moveSelection(-1);
 				break;
 			case 'g':
+				if (inTreeMode) break;
 				e.preventDefault();
 				pendingKey = 'g';
 				timeoutId = setTimeout(() => {
@@ -165,6 +172,7 @@ export function createKeyboardNav(
 				}, 500);
 				break;
 			case 'G':
+				if (inTreeMode) break;
 				e.preventDefault();
 				jumpLast();
 				break;
