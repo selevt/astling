@@ -493,24 +493,6 @@
 				<h3>Loading branches...</h3>
 			</div>
 		{:else}
-			<div class="results-header">
-				<h2>
-					{#if filter === 'starred'}
-						Starred Branches
-					{:else}
-						All Branches
-					{/if}
-				</h2>
-				<p class="results-count">
-					{(branchListPlain as BranchWithMetadata[]).length} branch{(
-						branchListPlain as BranchWithMetadata[]
-					).length === 1
-						? ''
-						: 'es'}
-					{searchTerm && ` matching "${searchTerm}"`}
-				</p>
-			</div>
-
 			{#if (branchListPlain as BranchWithMetadata[]).length === 0}
 				<div class="empty-state">
 					<div class="empty-icon">
@@ -724,25 +706,7 @@
 		overflow: hidden;
 	}
 
-	.results-header {
-		padding: 16px 16px 8px 16px;
-		border-bottom: 1px solid var(--color-border);
-	}
-
-	.results-header h2 {
-		margin: 0 0 4px 0;
-		font-size: 20px;
-		font-weight: 600;
-		color: var(--color-text-primary);
-	}
-
-	.results-count {
-		margin: 0;
-		color: var(--color-text-secondary);
-		font-size: 14px;
-	}
-
-	.branches-list {
+.branches-list {
 		padding: 16px;
 	}
 
