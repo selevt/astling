@@ -31,7 +31,8 @@
 		totalBranches = 0,
 		starredCount = 0,
 		viewMode = 'list' as 'list' | 'tree',
-		onViewModeChange
+		onViewModeChange,
+		onBranchCreated
 	}: {
 		currentFilter: string;
 		searchTerm: string;
@@ -47,6 +48,7 @@
 		starredCount?: number;
 		viewMode?: 'list' | 'tree';
 		onViewModeChange?: (mode: 'list' | 'tree') => void;
+		onBranchCreated?: (name: string) => void;
 	} = $props();
 
 	let newBranchName = $state('');
@@ -270,12 +272,14 @@
 	<Dialog bind:open={showCreateForm} title="Create New Branch">
 		<form
 			{...createBranchForm.enhance(async ({ submit, form }) => {
+				const branchName = (new FormData(form).get('name') as string) ?? '';
 				await submit();
 				form.reset();
 				const issues = createBranchForm.fields?.allIssues() ?? [];
 				if (issues.length === 0) {
 					showCreateForm = false;
 					createStartPoint = null;
+					onBranchCreated?.(branchName);
 				}
 			})}
 			oninput={() => createBranchForm.validate({ preflightOnly: true })}

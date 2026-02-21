@@ -29,7 +29,7 @@
 	import CommitDetailDialog from '$lib/components/CommitDetailDialog.svelte';
 	import type { BranchWithMetadata, RecentCommit } from '$lib/server/git/types';
 	import { createKeyboardNav } from '$lib/keyboard/handler.svelte';
-	import { expandAncestors } from '$lib/tree/treeNav.svelte';
+	import { expandAncestors, setExpanded } from '$lib/tree/treeNav.svelte';
 	import HelpOverlay from '$lib/keyboard/HelpOverlay.svelte';
 	import faviconUrl from '$lib/assets/favicon.svg';
 	import { invalidateAll } from '$app/navigation';
@@ -355,6 +355,13 @@
 			}
 		}
 	});
+
+	function handleBranchCreated(name: string) {
+		const parts = name.split('/');
+		for (let i = 1; i < parts.length; i++) {
+			setExpanded(parts.slice(0, i).join('/') + '/', true);
+		}
+	}
 </script>
 
 <svelte:window onkeydown={nav.handleKeydown} />
@@ -455,7 +462,8 @@
 			totalBranches={statsData?.totalGitBranches ?? 0}
 			starredCount={statsData?.starredBranches ?? 0}
 			{viewMode}
-			onViewModeChange={(mode) => {
+			onBranchCreated={handleBranchCreated}
+		onViewModeChange={(mode) => {
 				if (mode === 'tree' && nav.selectedBranch) {
 					const tree = buildTree(branchListPlain as BranchWithMetadata[]);
 					expandAncestors(tree.roots, nav.selectedBranch);
