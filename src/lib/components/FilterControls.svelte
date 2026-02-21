@@ -47,7 +47,6 @@
 	let newBranchStart = $state('HEAD');
 	let isCreating = $state(false);
 
-
 	let repoPathInfo: { path: string; valid: boolean } | null = $state(null);
 	let editingRepoPath = $state(false);
 	let newRepoPath = $state('');
@@ -295,7 +294,10 @@
 			<div class="dialog-actions">
 				<button
 					type="button"
-					onclick={() => { showCreateForm = false; createStartPoint = null; }}
+					onclick={() => {
+						showCreateForm = false;
+						createStartPoint = null;
+					}}
 					class="dialog-btn dialog-btn-cancel"
 				>
 					Cancel
