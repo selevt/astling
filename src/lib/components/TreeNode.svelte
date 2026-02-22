@@ -1,5 +1,5 @@
 <script lang="ts">
-	import type { TreeNode } from '$lib/tree/types';
+	import type { TreeNode, DirectoryNode } from '$lib/tree/types';
 	import type { BranchWithMetadata, RecentCommit } from '$lib/server/git/types';
 	import BranchCard from './BranchCard.svelte';
 	import DirectoryCard from './DirectoryCard.svelte';
@@ -23,7 +23,8 @@
 		renamingBranchName,
 		onRenameComplete,
 		onError,
-		focusedTreePath
+		focusedTreePath,
+		onDeleteDirectory
 	}: {
 		node: TreeNode;
 		depth?: number;
@@ -42,6 +43,7 @@
 		onRenameComplete: () => void;
 		onError: (message: string) => void;
 		focusedTreePath: string | null;
+		onDeleteDirectory: (node: DirectoryNode) => void;
 	} = $props();
 </script>
 
@@ -73,6 +75,7 @@
 		{depth}
 		onToggleExpand={() => toggleExpanded(node.path)}
 		selected={focusedTreePath === node.path}
+		onDeleteAll={() => onDeleteDirectory(node)}
 	/>
 	{#if isExpanded(node.path)}
 		<div class="dir-children">
@@ -95,6 +98,7 @@
 					{onRenameComplete}
 					{onError}
 					{focusedTreePath}
+					{onDeleteDirectory}
 				/>
 			{/each}
 		</div>

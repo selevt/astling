@@ -1,5 +1,5 @@
 import type { BranchWithMetadata } from '$lib/server/git/types';
-import type { TreeNode } from '$lib/tree/types';
+import type { DirectoryNode, TreeNode } from '$lib/tree/types';
 import {
 	getFocusedTreePath,
 	setFocusedTreePath,
@@ -15,6 +15,7 @@ export interface KeyboardNavActions {
 	checkoutSelected: (branch: BranchWithMetadata) => void;
 	toggleStarSelected: (branch: BranchWithMetadata) => void;
 	deleteSelected: (branch: BranchWithMetadata, force?: boolean) => void;
+	deleteDirectory: (node: DirectoryNode) => void;
 	refresh: () => void;
 	createBranch: () => void;
 	createBranchFrom: (branch: BranchWithMetadata) => void;
@@ -281,7 +282,14 @@ export function createKeyboardNav(
 			case 'd': {
 				e.preventDefault();
 				const b = getSelectedBranch();
-				if (b) actions.deleteSelected(b);
+				if (b) {
+					actions.deleteSelected(b);
+				} else if (inTreeMode) {
+					const p = getFocusedTreePath();
+					const roots = actions.getTreeRoots();
+					const result = p && roots ? findNodeAndParent(roots, p) : null;
+					if (result?.node.kind === 'dir') actions.deleteDirectory(result.node);
+				}
 				break;
 			}
 			case 'D': {

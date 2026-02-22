@@ -1,18 +1,21 @@
 <script lang="ts">
 	import type { DirectoryNode } from '$lib/tree/types';
 	import FolderIcon from '$lib/icons/FolderIcon.svelte';
+	import TrashIcon from '$lib/icons/TrashIcon.svelte';
 
 	let {
 		node,
 		expanded,
 		depth,
 		onToggleExpand,
+		onDeleteAll,
 		selected
 	}: {
 		node: DirectoryNode;
 		expanded: boolean;
 		depth: number;
 		onToggleExpand: () => void;
+		onDeleteAll?: () => void;
 		selected?: boolean;
 	} = $props();
 </script>
@@ -27,6 +30,16 @@
 		<span class="branch-count">{node.branchCount}</span>
 		{#if node.hasCurrentBranch}
 			<span class="current-badge">current</span>
+		{/if}
+		{#if node.availableActions.includes('delete-all')}
+			<span class="spacer"></span>
+			<button
+				class="delete-btn"
+				onclick={() => onDeleteAll?.()}
+				title="Delete all branches in this directory"
+			>
+				<TrashIcon />
+			</button>
 		{/if}
 	</div>
 </div>
@@ -99,6 +112,34 @@
 		border-radius: 10px;
 		padding: 1px 7px;
 		font-weight: 500;
+	}
+
+	.spacer {
+		margin-left: auto;
+	}
+
+	.delete-btn {
+		color: var(--color-error-text);
+		border-color: var(--color-error-border);
+		display: flex;
+		align-items: center;
+		justify-content: center;
+		width: 28px;
+		height: 28px;
+		padding: 0;
+		background: none;
+		border: 1px solid var(--color-error-border);
+		border-radius: 6px;
+		cursor: pointer;
+		opacity: 0;
+	}
+
+	.dir-card:hover .delete-btn {
+		opacity: 1;
+	}
+
+	.delete-btn:hover {
+		background: var(--color-error-bg);
 	}
 
 	.dir-card.selected {

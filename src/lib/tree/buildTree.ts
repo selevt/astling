@@ -1,6 +1,19 @@
 import type { BranchWithMetadata } from '$lib/server/git/types';
 import type { BranchLeafNode, BranchTree, DirectoryNode, TreeNode } from './types';
 
+export function collectBranchNames(node: DirectoryNode): string[] {
+	const names: string[] = [];
+	function walk(n: TreeNode) {
+		if (n.kind === 'branch') {
+			if (!n.branch.current) names.push(n.path);
+		} else {
+			for (const child of n.children) walk(child);
+		}
+	}
+	for (const child of node.children) walk(child);
+	return names;
+}
+
 export function buildTree(branches: BranchWithMetadata[]): BranchTree {
 	// Map of dirPath (e.g. "feature/") -> DirectoryNode
 	const dirMap = new Map<string, DirectoryNode>();
@@ -21,7 +34,7 @@ export function buildTree(branches: BranchWithMetadata[]): BranchTree {
 			children: [],
 			branchCount: 0,
 			hasCurrentBranch: false,
-			availableActions: []
+			availableActions: ['delete-all']
 		};
 		dirMap.set(dirPath, node);
 

@@ -1,6 +1,6 @@
 import type { BranchWithMetadata } from '$lib/server/git/types';
 
-export type DirectoryAction = never; // extend: | 'delete-all' | ...
+export type DirectoryAction = 'delete-all';
 
 export interface BranchLeafNode {
 	kind: 'branch';

@@ -1,6 +1,6 @@
 <script lang="ts">
 	import { SvelteSet } from 'svelte/reactivity';
-	import { findMergedBranches, deleteMergedBranches } from '../../routes/branches/data.remote';
+	import { findMergedBranches, deleteBranches } from '../../routes/branches/data.remote';
 	import Dialog from './Dialog.svelte';
 
 	let {
@@ -65,7 +65,7 @@
 	async function handleDelete() {
 		phase = 'deleting';
 		try {
-			result = await deleteMergedBranches([...selected]);
+			result = await deleteBranches([...selected]);
 			phase = 'done';
 			setTimeout(() => {
 				open = false;

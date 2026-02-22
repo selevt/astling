@@ -478,7 +478,7 @@ export const restorePatch = command(
 );
 
 // Command to delete multiple branches at once
-export const deleteMergedBranches = command(
+export const deleteBranches = command(
 	v.array(v.string()),
 	async (
 		branches

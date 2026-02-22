@@ -16,13 +16,16 @@
 		backupBranch,
 		restorePatch,
 		getTargetBranch,
-		getBranchCommits
+		getBranchCommits,
+		deleteBranches
 	} from './branches/data.remote';
 	import BranchCard from '$lib/components/BranchCard.svelte';
 	import CommitList from '$lib/components/CommitList.svelte';
 	import FilterControls from '$lib/components/FilterControls.svelte';
 	import BranchTreeView from '$lib/components/BranchTreeView.svelte';
-	import { buildTree } from '$lib/tree/buildTree';
+	import DeleteDirectoryDialog from '$lib/components/DeleteDirectoryDialog.svelte';
+	import { buildTree, collectBranchNames } from '$lib/tree/buildTree';
+	import type { DirectoryNode } from '$lib/tree/types';
 	import ErrorDialog from '$lib/components/ErrorDialog.svelte';
 	import DeleteConfirmDialog from '$lib/components/DeleteConfirmDialog.svelte';
 	import MergedBranchesDialog from '$lib/components/MergedBranchesDialog.svelte';
@@ -65,6 +68,10 @@
 	let deleteError = $state<string | null>(null);
 	let showCommitDialog = $state(false);
 	let showHistoryFor = $state<string | null>(null);
+	let showDeleteDirDialog = $state(false);
+	let deleteDirPath = $state('');
+	let deleteDirBranches = $state<string[]>([]);
+	let deleteDirSkippedCurrent = $state(false);
 	let selectedCommitHash = $state('');
 	let selectedCommitMessage = $state('');
 	let restoreFileInput: HTMLInputElement;
@@ -205,6 +212,24 @@
 		showDeleteDialog = true;
 	}
 
+	function handleDeleteDirectory(node: DirectoryNode) {
+		deleteDirPath = node.path;
+		deleteDirBranches = collectBranchNames(node);
+		deleteDirSkippedCurrent = node.hasCurrentBranch;
+		showDeleteDirDialog = true;
+	}
+
+	async function performDeleteDirectory() {
+		showDeleteDirDialog = false;
+		await withViewTransition(async () => {
+			await deleteBranches(deleteDirBranches);
+			if (deleteDirBranches.includes(nav.selectedBranch ?? '')) {
+				nav.selectedBranch = null;
+			}
+			return true;
+		});
+	}
+
 	async function performDelete(force: boolean) {
 		const name = deleteBranchName;
 		const list = branchListPlain as BranchWithMetadata[];
@@ -320,6 +345,7 @@
 				}
 			}
 		},
+		deleteDirectory: handleDeleteDirectory,
 		refresh: reload,
 		createBranch: () => {
 			showCreateForm = true;
@@ -492,83 +518,82 @@
 				<RefreshIcon class="loading-spinner" width={32} height={32} />
 				<h3>Loading branches...</h3>
 			</div>
-		{:else}
-			{#if (branchListPlain as BranchWithMetadata[]).length === 0}
-				<div class="empty-state">
-					<div class="empty-icon">
-						<GitBranchIcon width={48} height={48} />
-					</div>
-					<h3>No branches found</h3>
-					<p>
-						{searchTerm
-							? `No branches match your search for "${searchTerm}"`
-							: filter === 'starred'
-								? 'No starred branches yet'
-								: 'No branches found'}
-					</p>
-					{#if searchTerm}
-						<button
-							onclick={() => {
-								searchTerm = ''; /* branchList is derived so no explicit load needed */
-							}}>Clear Search</button
-						>
-					{/if}
+		{:else if (branchListPlain as BranchWithMetadata[]).length === 0}
+			<div class="empty-state">
+				<div class="empty-icon">
+					<GitBranchIcon width={48} height={48} />
 				</div>
-			{:else if viewMode === 'list'}
-				<div class="branches-list">
-					{#each branchListPlain as BranchWithMetadata[] as branch (branch.name)}
-						<BranchCard
-							{branch}
-							selected={nav.selectedBranch === branch.name}
-							onSelect={(name) => (nav.selectedBranch = name)}
-							onCheckout={handleCheckout}
-							onToggleStar={handleToggleStar}
-							onDelete={(name) => handleDelete(name)}
-							showDescriptionForm={editingBranchName === branch.name}
-							onEditComplete={() => (editingBranchName = null)}
-							showRenameForm={renamingBranchName === branch.name}
-							onRenameComplete={() => (renamingBranchName = null)}
-							onError={showErrorDialog}
-							showCommitHistory={showHistoryFor === branch.name}
-							commitHistory={showHistoryFor === branch.name ? branchCommits : []}
-							commitHistoryLoading={false}
-							onToggleHistory={() => {
-								showHistoryFor = showHistoryFor === branch.name ? null : branch.name;
-							}}
-							onCommitClick={(hash, message) => {
-								selectedCommitHash = hash;
-								selectedCommitMessage = message;
-								showCommitDialog = true;
-							}}
-						/>
-					{/each}
-				</div>
-			{:else if branchTree}
-				<BranchTreeView
-					roots={branchTree.roots}
-					{showHistoryFor}
-					{branchCommits}
-					onToggleHistory={(path) => {
-						showHistoryFor = showHistoryFor === path ? null : path;
-					}}
-					onCommitClick={(hash, message) => {
-						selectedCommitHash = hash;
-						selectedCommitMessage = message;
-						showCommitDialog = true;
-					}}
-					selectedBranch={nav.selectedBranch}
-					onSelect={(name) => (nav.selectedBranch = name)}
-					onCheckout={handleCheckout}
-					onToggleStar={handleToggleStar}
-					onDelete={(name) => handleDelete(name)}
-					{editingBranchName}
-					onEditComplete={() => (editingBranchName = null)}
-					{renamingBranchName}
-					onRenameComplete={() => (renamingBranchName = null)}
-					onError={showErrorDialog}
-					focusedTreePath={nav.focusedTreePath}
-				/>
-			{/if}
+				<h3>No branches found</h3>
+				<p>
+					{searchTerm
+						? `No branches match your search for "${searchTerm}"`
+						: filter === 'starred'
+							? 'No starred branches yet'
+							: 'No branches found'}
+				</p>
+				{#if searchTerm}
+					<button
+						onclick={() => {
+							searchTerm = ''; /* branchList is derived so no explicit load needed */
+						}}>Clear Search</button
+					>
+				{/if}
+			</div>
+		{:else if viewMode === 'list'}
+			<div class="branches-list">
+				{#each branchListPlain as BranchWithMetadata[] as branch (branch.name)}
+					<BranchCard
+						{branch}
+						selected={nav.selectedBranch === branch.name}
+						onSelect={(name) => (nav.selectedBranch = name)}
+						onCheckout={handleCheckout}
+						onToggleStar={handleToggleStar}
+						onDelete={(name) => handleDelete(name)}
+						showDescriptionForm={editingBranchName === branch.name}
+						onEditComplete={() => (editingBranchName = null)}
+						showRenameForm={renamingBranchName === branch.name}
+						onRenameComplete={() => (renamingBranchName = null)}
+						onError={showErrorDialog}
+						showCommitHistory={showHistoryFor === branch.name}
+						commitHistory={showHistoryFor === branch.name ? branchCommits : []}
+						commitHistoryLoading={false}
+						onToggleHistory={() => {
+							showHistoryFor = showHistoryFor === branch.name ? null : branch.name;
+						}}
+						onCommitClick={(hash, message) => {
+							selectedCommitHash = hash;
+							selectedCommitMessage = message;
+							showCommitDialog = true;
+						}}
+					/>
+				{/each}
+			</div>
+		{:else if branchTree}
+			<BranchTreeView
+				roots={branchTree.roots}
+				{showHistoryFor}
+				{branchCommits}
+				onToggleHistory={(path) => {
+					showHistoryFor = showHistoryFor === path ? null : path;
+				}}
+				onCommitClick={(hash, message) => {
+					selectedCommitHash = hash;
+					selectedCommitMessage = message;
+					showCommitDialog = true;
+				}}
+				selectedBranch={nav.selectedBranch}
+				onSelect={(name) => (nav.selectedBranch = name)}
+				onCheckout={handleCheckout}
+				onToggleStar={handleToggleStar}
+				onDelete={(name) => handleDelete(name)}
+				onDeleteDirectory={handleDeleteDirectory}
+				{editingBranchName}
+				onEditComplete={() => (editingBranchName = null)}
+				{renamingBranchName}
+				onRenameComplete={() => (renamingBranchName = null)}
+				onError={showErrorDialog}
+				focusedTreePath={nav.focusedTreePath}
+			/>
 		{/if}
 	</section>
 </div>
@@ -605,6 +630,17 @@
 		bind:open={showCommitDialog}
 		hash={selectedCommitHash}
 		message={selectedCommitMessage}
+	/>
+{/if}
+
+{#if showDeleteDirDialog}
+	<DeleteDirectoryDialog
+		bind:open={showDeleteDirDialog}
+		dirPath={deleteDirPath}
+		branches={deleteDirBranches}
+		skippedCurrent={deleteDirSkippedCurrent}
+		onConfirm={performDeleteDirectory}
+		onCancel={() => (showDeleteDirDialog = false)}
 	/>
 {/if}
 
@@ -706,7 +742,7 @@
 		overflow: hidden;
 	}
 
-.branches-list {
+	.branches-list {
 		padding: 16px;
 	}
 

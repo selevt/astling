@@ -1,5 +1,5 @@
 <script lang="ts">
-	import type { TreeNode } from '$lib/tree/types';
+	import type { TreeNode, DirectoryNode } from '$lib/tree/types';
 	import type { RecentCommit } from '$lib/server/git/types';
 	import TreeNodeComponent from './TreeNode.svelte';
 
@@ -14,6 +14,7 @@
 		onCheckout,
 		onToggleStar,
 		onDelete,
+		onDeleteDirectory,
 		editingBranchName,
 		onEditComplete,
 		renamingBranchName,
@@ -31,6 +32,7 @@
 		onCheckout: (name: string) => void;
 		onToggleStar: (name: string) => void;
 		onDelete: (name: string) => void;
+		onDeleteDirectory: (node: DirectoryNode) => void;
 		editingBranchName: string | null;
 		onEditComplete: () => void;
 		renamingBranchName: string | null;
@@ -54,6 +56,7 @@
 			{onCheckout}
 			{onToggleStar}
 			{onDelete}
+			{onDeleteDirectory}
 			{editingBranchName}
 			{onEditComplete}
 			{renamingBranchName}
