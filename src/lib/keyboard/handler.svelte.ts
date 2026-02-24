@@ -128,8 +128,18 @@ export function createKeyboardNav(
 		const roots = actions.getTreeRoots();
 		if (!roots) return;
 		const nodes = getVisibleNodes(roots);
-		if (!nodes.length) return;
+		if (!nodes.length) {
+			window.scrollTo({ top: 0, behavior: 'smooth' });
+			return;
+		}
 		const node = nodes[0];
+		const firstPath = node.kind === 'branch' ? node.branch.name : node.path;
+		if (getFocusedTreePath() === firstPath) {
+			selectedBranch = null;
+			setFocusedTreePath(null);
+			window.scrollTo({ top: 0, behavior: 'smooth' });
+			return;
+		}
 		if (node.kind === 'branch') {
 			selectedBranch = node.branch.name;
 			setFocusedTreePath(node.branch.name);
