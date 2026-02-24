@@ -68,6 +68,8 @@
 				<dd>Toggle list / tree view</dd>
 				<dt><kbd>h</kbd></dt>
 				<dd>Collapse directory</dd>
+				<dt><kbd>H</kbd></dt>
+				<dd>Collapse all directories</dd>
 				<dt><kbd>l</kbd></dt>
 				<dd>Expand directory (on dir node)</dd>
 			</dl>

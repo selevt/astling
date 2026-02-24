@@ -6,7 +6,8 @@ import {
 	isExpanded,
 	setExpanded,
 	getVisibleNodes,
-	findNodeAndParent
+	findNodeAndParent,
+	collapseAll
 } from '$lib/tree/treeNav.svelte';
 
 export interface KeyboardNavActions {
@@ -364,6 +365,13 @@ export function createKeyboardNav(
 							}
 						}
 					}
+				}
+				break;
+			case 'H':
+				if (inTreeMode) {
+					e.preventDefault();
+					const roots = actions.getTreeRoots();
+					if (roots) collapseAll(roots);
 				}
 				break;
 			case 'l': {

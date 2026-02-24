@@ -61,6 +61,18 @@ export function findNodeAndParent(
 	return search(roots, null);
 }
 
+export function collapseAll(roots: TreeNode[]): void {
+	function walk(nodes: TreeNode[]) {
+		for (const node of nodes) {
+			if (node.kind === 'dir') {
+				setExpanded(node.path, false);
+				walk(node.children);
+			}
+		}
+	}
+	walk(roots);
+}
+
 export function getVisibleNodes(roots: TreeNode[]): TreeNode[] {
 	const result: TreeNode[] = [];
 	function walk(nodes: TreeNode[]) {
