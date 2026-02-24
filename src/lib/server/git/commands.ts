@@ -293,6 +293,13 @@ export class GitService {
 		}
 	}
 
+	async fetchRemote(): Promise<void> {
+		const result = await this.execGitCommand(['fetch', '--all']);
+		if (!result.success) {
+			throw new Error(`Failed to fetch: ${result.error}`);
+		}
+	}
+
 	private parseCommitLog(output: string): RecentCommit[] {
 		return output
 			.split('\n')
@@ -366,7 +373,15 @@ export class GitService {
 		const commits = this.parseCommitLog(result.output);
 		const commit = commits[0];
 		if (!commit) return null;
-		return { ...commit, isFork: true };
+
+		const behindResult = await this.execGitCommand([
+			'rev-list', '--count', `${mergeBase}..${targetBranch}`
+		]);
+		const behindCount = behindResult.success
+			? parseInt(behindResult.output.trim(), 10) || 0
+			: 0;
+
+		return { ...commit, isFork: true, behindCount: behindCount > 0 ? behindCount : undefined };
 	}
 
 	/**

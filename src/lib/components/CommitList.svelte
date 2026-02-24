@@ -39,7 +39,7 @@
 		<code class="commit-hash">{commit.hash}</code>{#if commit.isFork}<ForkIcon
 				class="fork-icon"
 				aria-label="fork point"
-			/>{/if}
+			/>{/if}{#if commit.isFork && commit.behindCount}<span class="behind-count" title="Target branch has {commit.behindCount} new commits since divergence">↓{commit.behindCount}</span>{/if}
 		{#each commit.refs as ref (ref.name)}
 			<span class="ref-badge ref-badge--{ref.type}"
 				>{ref.name}{#if ref.synced}<CloudIcon class="ref-cloud" />{/if}</span
@@ -98,6 +98,12 @@
 	.commit--fork {
 		color: var(--color-text-secondary);
 		opacity: 0.7;
+	}
+
+	.behind-count {
+		font-size: 11px;
+		color: var(--color-text-secondary);
+		flex-shrink: 0;
 	}
 
 	:global(.fork-icon) {

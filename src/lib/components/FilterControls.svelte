@@ -5,6 +5,8 @@
 		setTargetBranch,
 		createBranch
 	} from '../../routes/branches/data.remote';
+	import { fetchRemote } from '../../routes/branches/data.remote';
+	import DownloadIcon from '$lib/icons/DownloadIcon.svelte';
 	import { createBranchSchema } from '$lib/schemas/branch';
 	import { onMount } from 'svelte';
 	import Dialog from './Dialog.svelte';
@@ -54,6 +56,7 @@
 	let newBranchName = $state('');
 	let newBranchStart = $state('HEAD');
 	let isCreating = $state(false);
+	let isFetching = $state(false);
 
 	let repoPathInfo: { path: string; valid: boolean } | null = $state(null);
 	let newRepoPath = $state('');
@@ -130,6 +133,11 @@
 		editingConfig = false;
 		newRepoPath = repoPathInfo?.path ?? '';
 		newTargetBranch = targetBranch;
+	}
+
+	async function handleFetch() {
+		isFetching = true;
+		try { await fetchRemote(); } finally { isFetching = false; }
 	}
 
 	const filters = $derived([
@@ -256,6 +264,11 @@
 				{/each}
 			</select>
 		</div>
+
+		<button class="fetch-btn" onclick={handleFetch} disabled={isFetching} title="Fetch all remotes">
+			<DownloadIcon />
+			{isFetching ? 'Fetching...' : 'Fetch'}
+		</button>
 
 		<button
 			class="find-merged-btn"
@@ -462,6 +475,31 @@
 		outline: none;
 		border-color: var(--color-accent-blue);
 		box-shadow: 0 0 0 3px var(--color-focus-ring);
+	}
+
+	.fetch-btn {
+		padding: 8px 16px;
+		background: var(--color-bg-surface);
+		color: var(--color-text-primary);
+		border: 1px solid var(--color-border-input);
+		border-radius: 6px;
+		cursor: pointer;
+		font-size: 14px;
+		font-weight: 500;
+		transition: all 0.2s ease;
+		display: flex;
+		align-items: center;
+		gap: 6px;
+	}
+
+	.fetch-btn:hover:not(:disabled) {
+		background: var(--color-bg-hover);
+		border-color: var(--color-border-input);
+	}
+
+	.fetch-btn:disabled {
+		opacity: 0.6;
+		cursor: not-allowed;
 	}
 
 	.find-merged-btn {

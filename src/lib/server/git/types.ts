@@ -44,4 +44,5 @@ export interface RecentCommit {
 	absoluteDate: string;
 	refs: RefBadge[];
 	isFork?: boolean;
+	behindCount?: number; // commits on target branch since this fork point
 }

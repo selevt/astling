@@ -519,6 +519,18 @@ export const pullBranch = command(v.optional(v.string()), async (branchName) => 
 	}
 });
 
+// Command to fetch all remotes
+export const fetchRemote = command(async () => {
+	try {
+		await gitService.fetchRemote();
+		await getBranches().refresh();
+		await getStaleBranches().refresh();
+		return { success: true };
+	} catch (error) {
+		throw new Error(`Failed to fetch: ${error instanceof Error ? error.message : 'Unknown error'}`);
+	}
+});
+
 // Command to push a branch
 export const pushBranch = command(
 	v.object({

@@ -89,6 +89,16 @@ git checkout main --quiet
 git checkout -b feature/empty --quiet
 
 # =============================================================
+# Add commits to main AFTER branching feature/wip and chore/update-deps.
+# This makes those branches' fork commits visibly "behind" main —
+# demonstrating the behindCount feature in the commit log.
+# =============================================================
+git checkout main --quiet
+commit "src/notifications.ts" "add notifications service"
+commit "src/analytics.ts" "add analytics module"
+commit "src/telemetry.ts" "add telemetry"
+
+# =============================================================
 # Tag on main for ref badge testing
 # =============================================================
 git tag v1.0 main
