@@ -17,7 +17,8 @@
 		restorePatch,
 		getTargetBranch,
 		getBranchCommits,
-		deleteBranches
+		deleteBranches,
+		fetchRemote
 	} from './branches/data.remote';
 	import BranchCard from '$lib/components/BranchCard.svelte';
 	import CommitList from '$lib/components/CommitList.svelte';
@@ -362,6 +363,9 @@
 		},
 		findMerged: () => {
 			showMergedDialog = true;
+		},
+		fetch: () => {
+			fetchRemote();
 		},
 		backupBranch: (b) => handleBackup(b.name),
 		toggleHistory: (b) => {

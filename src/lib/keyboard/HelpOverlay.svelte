@@ -59,6 +59,8 @@
 				<dd>Starred</dd>
 				<dt><kbd>g m</kbd></dt>
 				<dd>Find merged</dd>
+				<dt><kbd>g f</kbd></dt>
+				<dd>Fetch remotes</dd>
 			</dl>
 		</div>
 		<div class="help-section">

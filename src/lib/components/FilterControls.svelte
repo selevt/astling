@@ -68,7 +68,7 @@
 
 	let editingConfig = $state(false);
 
-	let fetchMeta = $state<{ lastFetch: number; intervalSecs: number } | null>(null);
+	let fetchMeta = $derived(await getAutoFetch());
 	let newAutoFetchInterval = $state(0);
 	let now = $state(Date.now());
 	let pollTimer: ReturnType<typeof setInterval> | null = null;
@@ -106,8 +106,6 @@
 		} catch (err) {
 			console.error('Failed to fetch target branch:', err);
 		}
-		fetchMeta = await getAutoFetch();
-		newAutoFetchInterval = fetchMeta.intervalSecs;
 		await checkAutoFetch();
 		pollTimer = setInterval(async () => {
 			now = Date.now();
@@ -144,7 +142,6 @@
 
 		if (fetchMeta && newAutoFetchInterval !== fetchMeta.intervalSecs) {
 			await setAutoFetchInterval(newAutoFetchInterval);
-			fetchMeta = await getAutoFetch();
 		}
 
 		if (repoOk && branchOk) {
@@ -156,6 +153,7 @@
 		editingConfig = false;
 		newRepoPath = repoPathInfo?.path ?? '';
 		newTargetBranch = targetBranch;
+		newAutoFetchInterval = fetchMeta?.intervalSecs ?? 0;
 	}
 
 	function formatLastFetch(lastFetch: number, _now: number): string {
@@ -178,7 +176,6 @@
 		isFetching = true;
 		try {
 			await fetchRemote();
-			fetchMeta = await getAutoFetch();
 		} finally {
 			isFetching = false;
 		}
@@ -226,6 +223,7 @@
 				<button
 					class="edit-repo-btn"
 					onclick={() => {
+						newAutoFetchInterval = fetchMeta?.intervalSecs ?? 0;
 						editingConfig = true;
 					}}>Change</button
 				>

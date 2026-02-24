@@ -23,6 +23,7 @@ export interface KeyboardNavActions {
 	editDescription: (branch: BranchWithMetadata) => void;
 	renameBranch: (branch: BranchWithMetadata) => void;
 	findMerged: () => void;
+	fetch: () => void;
 	backupBranch: (branch: BranchWithMetadata) => void;
 	toggleHistory: (branch: BranchWithMetadata) => void;
 	isHistoryOpen: () => boolean;
@@ -234,6 +235,9 @@ export function createKeyboardNav(
 					break;
 				case 'm':
 					actions.findMerged();
+					break;
+				case 'f':
+					actions.fetch();
 					break;
 			}
 			return;
