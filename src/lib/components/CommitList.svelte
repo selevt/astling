@@ -200,6 +200,12 @@
 		border: 1px solid var(--color-badge-yellow-border);
 	}
 
+	.ref-badge--worktree {
+		background: var(--color-badge-orange-bg, #fff7ed);
+		color: var(--color-badge-orange-text, #9a3412);
+		border: 1px solid var(--color-badge-orange-border, #fb923c);
+	}
+
 	:global(.ref-cloud) {
 		width: 12px !important;
 		height: 12px !important;

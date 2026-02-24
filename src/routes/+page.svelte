@@ -333,7 +333,7 @@
 		focusSearch: () => document.getElementById('branch-search')?.focus(),
 		getViewMode: () => viewMode,
 		checkoutSelected: (b) => {
-			if (!b.current) handleCheckout(b.name);
+			if (!b.current && !b.lockedByWorktree) handleCheckout(b.name);
 		},
 		toggleStarSelected: (b) => handleToggleStar(b.name),
 		deleteSelected: (b, force) => {

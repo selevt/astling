@@ -3,7 +3,13 @@ import { promisify } from 'util';
 import { join } from 'path';
 import { access, constants, writeFile, unlink } from 'fs/promises';
 import { tmpdir } from 'os';
-import type { GitBranch, GitCommandResult, BranchDeleteOptions, RecentCommit } from './types';
+import type {
+	GitBranch,
+	GitWorktree,
+	GitCommandResult,
+	BranchDeleteOptions,
+	RecentCommit
+} from './types';
 
 const execFileAsync = promisify(execFile);
 
@@ -141,6 +147,61 @@ export class GitService {
 		});
 	}
 
+	async getWorktrees(): Promise<GitWorktree[]> {
+		const result = await this.execGitCommand(['worktree', 'list', '--porcelain']);
+		if (!result.success || !result.output.trim()) return [];
+
+		const worktrees: GitWorktree[] = [];
+		const blocks = result.output.trim().split(/\n\n+/);
+		let isFirst = true;
+
+		for (const block of blocks) {
+			const lines = block.split('\n');
+			let path: string | null = null;
+			let branch: string | null = null;
+			let detached = false;
+			let bare = false;
+
+			for (const line of lines) {
+				if (line.startsWith('worktree ')) {
+					path = line.slice('worktree '.length).trim();
+				} else if (line.startsWith('branch ')) {
+					// branch refs/heads/feature/wip → feature/wip
+					branch = line
+						.slice('branch '.length)
+						.replace(/^refs\/heads\//, '')
+						.trim();
+				} else if (line === 'detached') {
+					detached = true;
+				} else if (line === 'bare') {
+					bare = true;
+				}
+			}
+
+			if (path) {
+				worktrees.push({
+					path,
+					branch: detached || bare ? null : branch,
+					isMain: isFirst
+				});
+			}
+			isFirst = false;
+		}
+
+		return worktrees;
+	}
+
+	private async getWorktreeBranches(): Promise<Set<string>> {
+		const worktrees = await this.getWorktrees();
+		const result = new Set<string>();
+		for (const wt of worktrees) {
+			if (!wt.isMain && wt.branch) {
+				result.add(wt.branch);
+			}
+		}
+		return result;
+	}
+
 	async getAllBranches(): Promise<GitBranch[]> {
 		// Get all branches with detailed info
 		const result = await this.execGitCommand([
@@ -159,6 +220,15 @@ export class GitService {
 
 		const lines = result.output.split('\n').filter((line) => line.trim());
 		const branches: GitBranch[] = [];
+
+		// Build worktree lookup: branchName → worktreePath (excluding main worktree)
+		const worktrees = await this.getWorktrees();
+		const worktreeMap = new Map<string, string>();
+		for (const wt of worktrees) {
+			if (!wt.isMain && wt.branch) {
+				worktreeMap.set(wt.branch, wt.path);
+			}
+		}
 
 		for (const line of lines) {
 			const parts = line.split('|');
@@ -195,6 +265,7 @@ export class GitService {
 				}
 
 				if (cleanName) {
+					const lockedByWorktree = worktreeMap.get(cleanName);
 					branches.push({
 						name: cleanName,
 						current: isCurrent,
@@ -204,7 +275,8 @@ export class GitService {
 						date: date || new Date().toISOString(),
 						ahead,
 						behind,
-						tracking
+						tracking,
+						...(lockedByWorktree ? { lockedByWorktree } : {})
 					});
 				}
 			}
@@ -300,7 +372,7 @@ export class GitService {
 		}
 	}
 
-	private parseCommitLog(output: string): RecentCommit[] {
+	private parseCommitLog(output: string, worktreeBranches?: Set<string>): RecentCommit[] {
 		return output
 			.split('\n')
 			.filter((line) => line.trim())
@@ -326,7 +398,12 @@ export class GitService {
 					}
 					// Add local branches, marking synced if matching remote exists
 					for (const name of locals) {
-						refs.push({ name, type: 'branch', synced: remotes.has(name) });
+						const isWorktree = worktreeBranches?.has(name) ?? false;
+						refs.push({
+							name,
+							type: isWorktree ? 'worktree' : 'branch',
+							synced: !isWorktree && remotes.has(name)
+						});
 						remotes.delete(name);
 					}
 					// Remaining remotes with no local match
@@ -348,19 +425,21 @@ export class GitService {
 		const args = ref
 			? ['log', ref, '--oneline', '-n', String(n), '--format=%h|%s|%ar|%aI|%D']
 			: ['log', '--oneline', '-n', String(n), '--format=%h|%s|%ar|%aI|%D'];
-		const result = await this.execGitCommand(args);
+		const [result, worktreeBranches] = await Promise.all([
+			this.execGitCommand(args),
+			this.getWorktreeBranches()
+		]);
 		if (!result.success) return [];
-		return this.parseCommitLog(result.output);
+		return this.parseCommitLog(result.output, worktreeBranches);
 	}
 
 	async getCommitsAheadOf(targetBranch: string, ref = 'HEAD'): Promise<RecentCommit[]> {
-		const result = await this.execGitCommand([
-			'log',
-			`${targetBranch}..${ref}`,
-			'--format=%h|%s|%ar|%aI|%D'
+		const [result, worktreeBranches] = await Promise.all([
+			this.execGitCommand(['log', `${targetBranch}..${ref}`, '--format=%h|%s|%ar|%aI|%D']),
+			this.getWorktreeBranches()
 		]);
 		if (!result.success || !result.output.trim()) return [];
-		return this.parseCommitLog(result.output);
+		return this.parseCommitLog(result.output, worktreeBranches);
 	}
 
 	async getForkCommit(targetBranch: string, ref = 'HEAD'): Promise<RecentCommit | null> {
@@ -368,15 +447,12 @@ export class GitService {
 		if (!mergeBaseResult.success || !mergeBaseResult.output.trim()) return null;
 		const mergeBase = mergeBaseResult.output.trim();
 
-		const result = await this.execGitCommand([
-			'log',
-			mergeBase,
-			'-n',
-			'1',
-			'--format=%h|%s|%ar|%aI|%D'
+		const [result, worktreeBranches] = await Promise.all([
+			this.execGitCommand(['log', mergeBase, '-n', '1', '--format=%h|%s|%ar|%aI|%D']),
+			this.getWorktreeBranches()
 		]);
 		if (!result.success || !result.output.trim()) return null;
-		const commits = this.parseCommitLog(result.output);
+		const commits = this.parseCommitLog(result.output, worktreeBranches);
 		const commit = commits[0];
 		if (!commit) return null;
 

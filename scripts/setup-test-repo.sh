@@ -12,7 +12,7 @@ if [ -d "$REPO_DIR/.git" ] && [ "${1:-}" != "-f" ]; then
   exit 0
 fi
 
-rm -rf "$REPO_DIR" "$REMOTE_DIR"
+rm -rf "$REPO_DIR" "$REMOTE_DIR" "test-repo-wt"
 mkdir "$REPO_DIR"
 cd "$REPO_DIR"
 git init
@@ -119,6 +119,13 @@ git -C "../$REMOTE_DIR" branch -D feature/auth 2>/dev/null || true
 # Go back to main for a clean starting state
 git checkout main --quiet
 
+# =============================================================
+# Worktree: feature/wip checked out in a linked worktree
+# Tests that the app shows the branch as worktree-locked
+# instead of offering a Checkout button.
+# =============================================================
+git worktree add "../test-repo-wt" feature/wip --quiet
+
 echo ""
 echo "=== test-repo created ==="
 echo ""
@@ -137,3 +144,6 @@ echo "  NOT MERGED:             chore/update-deps"
 echo ""
 echo "Stale remote refs (should show origin/feature/auth):"
 git remote prune origin --dry-run 2>&1 || true
+echo ""
+echo "Worktree: test-repo-wt → feature/wip (should show as locked, no Checkout button)"
+git worktree list

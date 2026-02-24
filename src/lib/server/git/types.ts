@@ -1,3 +1,9 @@
+export interface GitWorktree {
+	path: string;
+	branch: string | null; // null = detached HEAD
+	isMain: boolean;
+}
+
 export interface GitBranch {
 	name: string;
 	current: boolean;
@@ -8,6 +14,7 @@ export interface GitBranch {
 	ahead?: number;
 	behind?: number;
 	tracking?: string;
+	lockedByWorktree?: string; // absolute path of worktree that has this branch checked out
 }
 
 export interface BranchMetadata {
@@ -32,7 +39,7 @@ export interface BranchDeleteOptions {
 
 export interface RefBadge {
 	name: string;
-	type: 'branch' | 'remote' | 'tag' | 'head';
+	type: 'branch' | 'remote' | 'tag' | 'head' | 'worktree';
 	/** true when a matching origin/ remote ref exists */
 	synced?: boolean;
 }

@@ -220,11 +220,22 @@
 				class="checkout-btn"
 				class:loading={isLoading}
 				class:current={branch.current}
+				class:worktree={!!branch.lockedByWorktree}
 				onclick={handleCheckout}
-				disabled={branch.current || isLoading}
-				title={branch.current ? 'Already on this branch' : 'Checkout branch'}
+				disabled={branch.current || !!branch.lockedByWorktree || isLoading}
+				title={branch.current
+					? 'Already on this branch'
+					: branch.lockedByWorktree
+						? `Checked out in worktree: ${branch.lockedByWorktree}`
+						: 'Checkout branch'}
 			>
-				{isLoading ? '...' : branch.current ? 'Active' : 'Checkout'}
+				{isLoading
+					? '...'
+					: branch.current
+						? 'Active'
+						: branch.lockedByWorktree
+							? 'Worktree'
+							: 'Checkout'}
 			</button>
 			<button
 				class="rename-btn"
@@ -500,6 +511,14 @@
 		background: var(--color-accent-green);
 		color: var(--color-accent-green-text);
 		border-color: var(--color-accent-green);
+	}
+
+	.checkout-btn.worktree {
+		background: var(--color-badge-yellow-bg, #fef3c7);
+		color: var(--color-badge-yellow-text, #92400e);
+		border-color: var(--color-badge-yellow-border, #f59e0b);
+		opacity: 0.85;
+		cursor: default;
 	}
 
 	.checkout-btn.loading {
