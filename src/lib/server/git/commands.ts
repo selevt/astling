@@ -298,7 +298,7 @@ export class GitService {
 			.split('\n')
 			.filter((line) => line.trim())
 			.map((line) => {
-				const [hash, message, relativeDate, refsRaw] = line.split('|');
+				const [hash, message, relativeDate, absoluteDate, refsRaw] = line.split('|');
 				const refs: import('./types').RefBadge[] = [];
 				if (refsRaw?.trim()) {
 					const locals = new Set<string>();
@@ -327,14 +327,14 @@ export class GitService {
 						refs.push({ name: `origin/${name}`, type: 'remote' });
 					}
 				}
-				return { hash: hash || '', message: message || '', relativeDate: relativeDate || '', refs };
+				return { hash: hash || '', message: message || '', relativeDate: relativeDate || '', absoluteDate: absoluteDate || '', refs };
 			});
 	}
 
 	async getRecentCommits(n: number = 3, ref?: string): Promise<RecentCommit[]> {
 		const args = ref
-			? ['log', ref, '--oneline', '-n', String(n), '--format=%h|%s|%ar|%D']
-			: ['log', '--oneline', '-n', String(n), '--format=%h|%s|%ar|%D'];
+			? ['log', ref, '--oneline', '-n', String(n), '--format=%h|%s|%ar|%aI|%D']
+			: ['log', '--oneline', '-n', String(n), '--format=%h|%s|%ar|%aI|%D'];
 		const result = await this.execGitCommand(args);
 		if (!result.success) return [];
 		return this.parseCommitLog(result.output);
@@ -344,7 +344,7 @@ export class GitService {
 		const result = await this.execGitCommand([
 			'log',
 			`${targetBranch}..${ref}`,
-			'--format=%h|%s|%ar|%D'
+			'--format=%h|%s|%ar|%aI|%D'
 		]);
 		if (!result.success || !result.output.trim()) return [];
 		return this.parseCommitLog(result.output);
@@ -360,7 +360,7 @@ export class GitService {
 			mergeBase,
 			'-n',
 			'1',
-			'--format=%h|%s|%ar|%D'
+			'--format=%h|%s|%ar|%aI|%D'
 		]);
 		if (!result.success || !result.output.trim()) return null;
 		const commits = this.parseCommitLog(result.output);

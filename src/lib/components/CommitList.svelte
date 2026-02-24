@@ -2,6 +2,7 @@
 	import type { RecentCommit } from '$lib/server/git/types';
 	import ForkIcon from '$lib/icons/ForkIcon.svelte';
 	import CloudIcon from '$lib/icons/CloudIcon.svelte';
+	import { formatAbsoluteDate } from '$lib/utils/dates';
 
 	let {
 		commits,
@@ -45,7 +46,7 @@
 			>
 		{/each}
 		<span class="commit-message">{commit.message}</span>
-		<span class="commit-date">{commit.relativeDate}</span>
+		<span class="commit-date" title={formatAbsoluteDate(commit.absoluteDate)}>{commit.relativeDate}</span>
 	</button>
 {/snippet}
 

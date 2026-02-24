@@ -41,6 +41,7 @@ export interface RecentCommit {
 	hash: string;
 	message: string;
 	relativeDate: string;
+	absoluteDate: string;
 	refs: RefBadge[];
 	isFork?: boolean;
 }
