@@ -39,14 +39,20 @@
 		<code class="commit-hash">{commit.hash}</code>{#if commit.isFork}<ForkIcon
 				class="fork-icon"
 				aria-label="fork point"
-			/>{/if}{#if commit.isFork && commit.behindCount}<span class="behind-count" title="Target branch has {commit.behindCount} new commits since divergence">↓{commit.behindCount}</span>{/if}
+			/>{/if}{#if commit.isFork && commit.behindCount}<span
+				class="behind-count"
+				title="Target branch has {commit.behindCount} new commits since divergence"
+				>↓{commit.behindCount}</span
+			>{/if}
 		{#each commit.refs as ref (ref.name)}
 			<span class="ref-badge ref-badge--{ref.type}"
 				>{ref.name}{#if ref.synced}<CloudIcon class="ref-cloud" />{/if}</span
 			>
 		{/each}
 		<span class="commit-message">{commit.message}</span>
-		<span class="commit-date" title={formatAbsoluteDate(commit.absoluteDate)}>{commit.relativeDate}</span>
+		<span class="commit-date" title={formatAbsoluteDate(commit.absoluteDate)}
+			>{commit.relativeDate}</span
+		>
 	</button>
 {/snippet}
 

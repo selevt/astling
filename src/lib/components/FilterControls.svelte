@@ -215,7 +215,12 @@
 					<span class="config-separator">|</span>
 					<span class="config-item" title="Last git fetch">
 						<small>Fetched:</small>
-						<span class="fetch-time">{formatLastFetch(fetchMeta.lastFetch, now)}{#if fetchMeta.intervalSecs > 0}{' · auto'}{/if}</span>
+						<span class="fetch-time"
+							>{formatLastFetch(
+								fetchMeta.lastFetch,
+								now
+							)}{#if fetchMeta.intervalSecs > 0}{' · auto'}{/if}</span
+						>
 					</span>
 				{/if}
 			</div>

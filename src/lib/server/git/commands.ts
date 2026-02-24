@@ -334,7 +334,13 @@ export class GitService {
 						refs.push({ name: `origin/${name}`, type: 'remote' });
 					}
 				}
-				return { hash: hash || '', message: message || '', relativeDate: relativeDate || '', absoluteDate: absoluteDate || '', refs };
+				return {
+					hash: hash || '',
+					message: message || '',
+					relativeDate: relativeDate || '',
+					absoluteDate: absoluteDate || '',
+					refs
+				};
 			});
 	}
 
@@ -375,11 +381,11 @@ export class GitService {
 		if (!commit) return null;
 
 		const behindResult = await this.execGitCommand([
-			'rev-list', '--count', `${mergeBase}..${targetBranch}`
+			'rev-list',
+			'--count',
+			`${mergeBase}..${targetBranch}`
 		]);
-		const behindCount = behindResult.success
-			? parseInt(behindResult.output.trim(), 10) || 0
-			: 0;
+		const behindCount = behindResult.success ? parseInt(behindResult.output.trim(), 10) || 0 : 0;
 
 		return { ...commit, isFork: true, behindCount: behindCount > 0 ? behindCount : undefined };
 	}

@@ -199,7 +199,9 @@
 			</h3>
 			<div class="branch-meta">
 				<span class="author">{branch.author}</span>
-				<span class="date" title={`Last checked out: ${formatAbsoluteDate(branch.lastCheckedOut)}`}>{formatDate(branch.lastCheckedOut)}</span>
+				<span class="date" title={`Last checked out: ${formatAbsoluteDate(branch.lastCheckedOut)}`}
+					>{formatDate(branch.lastCheckedOut)}</span
+				>
 				{#if getAheadBehindText()}
 					<span class="ahead-behind">{getAheadBehindText()}</span>
 				{/if}
