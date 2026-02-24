@@ -215,6 +215,25 @@ export class MetadataService {
 		}
 	}
 
+	private static readonly FETCH_KEY = '__fetch_meta__';
+
+	async getFetchMeta(): Promise<{ lastFetch: number; intervalSecs: number }> {
+		const metadata = await this.readMetadata();
+		const raw = (metadata as any)[MetadataService.FETCH_KEY];
+		const envDefault = parseInt(process.env.AUTO_FETCH_INTERVAL ?? '0', 10) || 0;
+		return {
+			lastFetch: raw?.lastFetch ?? 0,
+			intervalSecs: raw?.intervalSecs ?? envDefault
+		};
+	}
+
+	async setFetchMeta(updates: { lastFetch?: number; intervalSecs?: number }): Promise<void> {
+		const metadata = await this.readMetadata();
+		const existing = (metadata as any)[MetadataService.FETCH_KEY] ?? {};
+		(metadata as any)[MetadataService.FETCH_KEY] = { ...existing, ...updates };
+		await this.writeMetadata(metadata);
+	}
+
 	// --- Prune check throttle ---
 	private static readonly PRUNE_KEY = '__prune_meta__';
 	private static readonly PRUNE_CHECK_INTERVAL_MS = 3 * 24 * 60 * 60 * 1000; // 3 days
@@ -258,6 +277,7 @@ export class MetadataService {
 		const gitBranchSet = new Set(gitBranches);
 		for (const metadataBranchName of Object.keys(metadata)) {
 			if (metadataBranchName === MetadataService.PRUNE_KEY) continue;
+			if (metadataBranchName === MetadataService.FETCH_KEY) continue;
 			if (!gitBranchSet.has(metadataBranchName)) {
 				delete metadata[metadataBranchName];
 				hasChanges = true;

@@ -3,12 +3,14 @@
 		getRepoPath,
 		setRepoPath,
 		setTargetBranch,
-		createBranch
+		createBranch,
+		fetchRemote,
+		getAutoFetch,
+		setAutoFetchInterval
 	} from '../../routes/branches/data.remote';
-	import { fetchRemote } from '../../routes/branches/data.remote';
 	import DownloadIcon from '$lib/icons/DownloadIcon.svelte';
 	import { createBranchSchema } from '$lib/schemas/branch';
-	import { onMount } from 'svelte';
+	import { onMount, onDestroy } from 'svelte';
 	import Dialog from './Dialog.svelte';
 	import GitBranchIcon from '$lib/icons/GitBranchIcon.svelte';
 	import StarIcon from '$lib/icons/StarIcon.svelte';
@@ -66,6 +68,11 @@
 
 	let editingConfig = $state(false);
 
+	let fetchMeta = $state<{ lastFetch: number; intervalSecs: number } | null>(null);
+	let newAutoFetchInterval = $state(0);
+	let now = $state(Date.now());
+	let pollTimer: ReturnType<typeof setInterval> | null = null;
+
 	let createBranchForm = $derived(createBranch.preflight(createBranchSchema));
 
 	$effect(() => {
@@ -99,6 +106,17 @@
 		} catch (err) {
 			console.error('Failed to fetch target branch:', err);
 		}
+		fetchMeta = await getAutoFetch();
+		newAutoFetchInterval = fetchMeta.intervalSecs;
+		await checkAutoFetch();
+		pollTimer = setInterval(async () => {
+			now = Date.now();
+			await checkAutoFetch();
+		}, 60_000);
+	});
+
+	onDestroy(() => {
+		if (pollTimer) clearInterval(pollTimer);
 	});
 
 	async function saveConfig() {
@@ -124,6 +142,11 @@
 			await refreshRepoInfo();
 		}
 
+		if (fetchMeta && newAutoFetchInterval !== fetchMeta.intervalSecs) {
+			await setAutoFetchInterval(newAutoFetchInterval);
+			fetchMeta = await getAutoFetch();
+		}
+
 		if (repoOk && branchOk) {
 			editingConfig = false;
 		}
@@ -135,9 +158,30 @@
 		newTargetBranch = targetBranch;
 	}
 
+	function formatLastFetch(lastFetch: number, _now: number): string {
+		if (!lastFetch) return 'never';
+		const diffSecs = Math.floor((Date.now() - lastFetch) / 1000);
+		if (diffSecs < 60) return 'just now';
+		if (diffSecs < 3600) return `${Math.floor(diffSecs / 60)}m ago`;
+		if (diffSecs < 86400) return `${Math.floor(diffSecs / 3600)}h ago`;
+		return `${Math.floor(diffSecs / 86400)}d ago`;
+	}
+
+	async function checkAutoFetch() {
+		if (!fetchMeta || fetchMeta.intervalSecs <= 0 || isFetching) return;
+		if (Date.now() - fetchMeta.lastFetch >= fetchMeta.intervalSecs * 1000) {
+			await handleFetch();
+		}
+	}
+
 	async function handleFetch() {
 		isFetching = true;
-		try { await fetchRemote(); } finally { isFetching = false; }
+		try {
+			await fetchRemote();
+			fetchMeta = await getAutoFetch();
+		} finally {
+			isFetching = false;
+		}
 	}
 
 	const filters = $derived([
@@ -170,6 +214,13 @@
 					<small>Target:</small>
 					<code class="repo-path">{targetBranch}</code>
 				</span>
+				{#if fetchMeta}
+					<span class="config-separator">|</span>
+					<span class="config-item" title="Last git fetch">
+						<small>Fetched:</small>
+						<span class="fetch-time">{formatLastFetch(fetchMeta.lastFetch, now)}{#if fetchMeta.intervalSecs > 0}{' · auto'}{/if}</span>
+					</span>
+				{/if}
 			</div>
 			<div class="repo-actions">
 				<button
@@ -189,6 +240,16 @@
 					<label class="config-edit-label">
 						<small>Target:</small>
 						<input type="text" bind:value={newTargetBranch} class="repo-input" />
+					</label>
+					<label class="config-edit-label">
+						<small>Auto-fetch:</small>
+						<select bind:value={newAutoFetchInterval} class="repo-select">
+							<option value={0}>Off</option>
+							<option value={300}>5 min</option>
+							<option value={900}>15 min</option>
+							<option value={1800}>30 min</option>
+							<option value={3600}>1 hour</option>
+						</select>
 					</label>
 				</div>
 				<div class="config-edit-actions">
@@ -690,5 +751,20 @@
 		color: var(--color-error);
 		font-size: 12px;
 		margin-top: 4px;
+	}
+
+	.fetch-time {
+		font-size: 12px;
+		color: var(--color-text-secondary);
+	}
+
+	.repo-select {
+		padding: 3px 6px;
+		border: 1px solid var(--color-border-input);
+		border-radius: 4px;
+		font-size: 12px;
+		background: var(--color-bg-surface);
+		color: var(--color-text-primary);
+		cursor: pointer;
 	}
 </style>

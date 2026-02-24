@@ -519,10 +519,24 @@ export const pullBranch = command(v.optional(v.string()), async (branchName) => 
 	}
 });
 
+// Query to get auto-fetch configuration
+export const getAutoFetch = query(async () => {
+	return metadataService.getFetchMeta();
+});
+
+// Command to set auto-fetch interval
+export const setAutoFetchInterval = command(v.number(), async (intervalSecs) => {
+	await metadataService.setFetchMeta({ intervalSecs });
+	await getAutoFetch().refresh();
+	return { success: true, intervalSecs };
+});
+
 // Command to fetch all remotes
 export const fetchRemote = command(async () => {
 	try {
 		await gitService.fetchRemote();
+		await metadataService.setFetchMeta({ lastFetch: Date.now() });
+		await getAutoFetch().refresh();
 		await getBranches().refresh();
 		await getStaleBranches().refresh();
 		return { success: true };
