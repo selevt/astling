@@ -296,6 +296,9 @@
 
 	<div class="commit-info">
 		<p class="commit-message">{branch.message}</p>
+		<span class="date" title={`Committed: ${formatAbsoluteDate(branch.date)}`}>
+			{formatDate(branch.date)}
+		</span>
 		<span class="commit-hash">{branch.hash.slice(0, 8)}</span>
 	</div>
 
@@ -569,6 +572,13 @@
 		overflow: hidden;
 		text-overflow: ellipsis;
 		white-space: nowrap;
+	}
+
+	.commit-info .date {
+		font-size: 12px;
+		color: var(--color-text-secondary);
+		white-space: nowrap;
+		margin-left: 8px;
 	}
 
 	.commit-hash {
