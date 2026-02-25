@@ -1,4 +1,4 @@
-import type { BranchWithMetadata } from '$lib/server/git/types';
+import type { BranchWithMetadata, GitWorktree } from '$lib/server/git/types';
 import type { DirectoryNode, TreeNode } from '$lib/tree/types';
 import {
 	getFocusedTreePath,
@@ -28,9 +28,10 @@ export interface KeyboardNavActions {
 	toggleHistory: (branch: BranchWithMetadata) => void;
 	isHistoryOpen: () => boolean;
 	closeHistory: () => void;
-	getViewMode: () => 'list' | 'tree';
+	getViewMode: () => 'list' | 'tree' | 'worktrees';
 	getTreeRoots: () => TreeNode[] | null;
-	setViewMode: (mode: 'list' | 'tree') => void;
+	setViewMode: (mode: 'list' | 'tree' | 'worktrees') => void;
+	getWorktreeList: () => GitWorktree[];
 }
 
 export function createKeyboardNav(
@@ -39,6 +40,7 @@ export function createKeyboardNav(
 ) {
 	// State (runes)
 	let selectedBranch = $state<string | null>(null);
+	let selectedWorktreePath = $state<string | null>(null);
 	let showHelp = $state(false);
 	let pendingKey = $state<string | null>(null);
 
@@ -68,6 +70,14 @@ export function createKeyboardNav(
 		const path = getFocusedTreePath();
 		if (path && path !== selectedBranch) {
 			const el = document.querySelector(`[data-tree-node="${CSS.escape(path)}"]`);
+			el?.scrollIntoView({ block: 'nearest' });
+		}
+	});
+
+	// Scroll selected worktree card into view
+	$effect(() => {
+		if (selectedWorktreePath) {
+			const el = document.querySelector(`[data-worktree="${CSS.escape(selectedWorktreePath)}"]`);
 			el?.scrollIntoView({ block: 'nearest' });
 		}
 	});
@@ -114,6 +124,26 @@ export function createKeyboardNav(
 			selectedBranch = null;
 			setFocusedTreePath(node.path);
 		}
+	}
+
+	function moveWorktreeSelection(delta: number) {
+		const list = actions.getWorktreeList();
+		if (list.length === 0) return;
+		const currentIdx = selectedWorktreePath
+			? list.findIndex((w) => w.path === selectedWorktreePath)
+			: -1;
+		let newIdx: number;
+		if (currentIdx === -1) {
+			if (delta < 0) return;
+			newIdx = 0;
+		} else if (delta < 0 && currentIdx === 0) {
+			selectedWorktreePath = null;
+			window.scrollTo({ top: 0, behavior: 'smooth' });
+			return;
+		} else {
+			newIdx = Math.max(0, Math.min(list.length - 1, currentIdx + delta));
+		}
+		selectedWorktreePath = list[newIdx].path;
 	}
 
 	function jumpFirst() {
@@ -211,7 +241,8 @@ export function createKeyboardNav(
 			active instanceof HTMLButtonElement || active instanceof HTMLAnchorElement;
 		if (isInteractive && (e.key === 'Enter' || e.key === ' ')) return;
 
-		const inTreeMode = actions.getViewMode() !== 'list';
+		const inTreeMode = actions.getViewMode() === 'tree';
+		const inWorktreeMode = actions.getViewMode() === 'worktrees';
 
 		// Handle second key in g-prefix sequence
 		if (pendingKey === 'g') {
@@ -221,7 +252,15 @@ export function createKeyboardNav(
 
 			switch (second) {
 				case 'g':
-					if (inTreeMode) {
+					if (inWorktreeMode) {
+						const wFirst = actions.getWorktreeList()[0]?.path ?? null;
+						if (selectedWorktreePath === wFirst) {
+							selectedWorktreePath = null;
+							window.scrollTo({ top: 0, behavior: 'smooth' });
+						} else {
+							selectedWorktreePath = wFirst;
+						}
+					} else if (inTreeMode) {
 						jumpTreeFirst();
 					} else {
 						jumpFirst();
@@ -239,6 +278,12 @@ export function createKeyboardNav(
 				case 'f':
 					actions.fetch();
 					break;
+				case 'w':
+					actions.setViewMode('worktrees');
+					break;
+				case 'b':
+					if (inWorktreeMode) actions.setViewMode('list');
+					break;
 			}
 			return;
 		}
@@ -247,7 +292,9 @@ export function createKeyboardNav(
 			case 'j':
 			case 'ArrowDown':
 				e.preventDefault();
-				if (inTreeMode) {
+				if (inWorktreeMode) {
+					moveWorktreeSelection(1);
+				} else if (inTreeMode) {
 					moveTreeSelection(1);
 				} else {
 					moveSelection(1);
@@ -256,7 +303,9 @@ export function createKeyboardNav(
 			case 'k':
 			case 'ArrowUp':
 				e.preventDefault();
-				if (inTreeMode) {
+				if (inWorktreeMode) {
+					moveWorktreeSelection(-1);
+				} else if (inTreeMode) {
 					moveTreeSelection(-1);
 				} else {
 					moveSelection(-1);
@@ -272,7 +321,10 @@ export function createKeyboardNav(
 				break;
 			case 'G':
 				e.preventDefault();
-				if (inTreeMode) {
+				if (inWorktreeMode) {
+					const wList = actions.getWorktreeList();
+					if (wList.length > 0) selectedWorktreePath = wList[wList.length - 1].path;
+				} else if (inTreeMode) {
 					jumpTreeLast();
 				} else {
 					jumpLast();
@@ -408,6 +460,8 @@ export function createKeyboardNav(
 					showHelp = false;
 				} else if (actions.isHistoryOpen()) {
 					actions.closeHistory();
+				} else if (inWorktreeMode && selectedWorktreePath !== null) {
+					selectedWorktreePath = null;
 				} else if (inTreeMode && getFocusedTreePath() !== null) {
 					setFocusedTreePath(null);
 					selectedBranch = null;
@@ -424,6 +478,12 @@ export function createKeyboardNav(
 		},
 		set selectedBranch(v: string | null) {
 			selectedBranch = v;
+		},
+		get selectedWorktreePath() {
+			return selectedWorktreePath;
+		},
+		set selectedWorktreePath(v: string | null) {
+			selectedWorktreePath = v;
 		},
 		get showHelp() {
 			return showHelp;

@@ -2,7 +2,7 @@ import { query, command, form } from '$app/server';
 import * as v from 'valibot';
 import { gitService } from '$lib/server/git/commands';
 import { metadataService } from '$lib/server/storage/metadata';
-import type { GitBranch, BranchWithMetadata, RecentCommit } from '$lib/server/git/types';
+import type { GitBranch, BranchWithMetadata, RecentCommit, GitWorktree } from '$lib/server/git/types';
 import { createBranchSchema } from '$lib/schemas/branch';
 
 export type CommandResult = { success: true; branch?: string } | { success: false; error: string };
@@ -543,6 +543,11 @@ export const fetchRemote = command(async () => {
 	} catch (error) {
 		throw new Error(`Failed to fetch: ${error instanceof Error ? error.message : 'Unknown error'}`);
 	}
+});
+
+// Query to get all worktrees
+export const getWorktrees = query(async () => {
+	return gitService.getWorktrees();
 });
 
 // Command to push a branch

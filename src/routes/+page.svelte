@@ -18,9 +18,11 @@
 		getTargetBranch,
 		getBranchCommits,
 		deleteBranches,
-		fetchRemote
+		fetchRemote,
+		getWorktrees
 	} from './branches/data.remote';
 	import BranchCard from '$lib/components/BranchCard.svelte';
+	import WorktreeCard from '$lib/components/WorktreeCard.svelte';
 	import CommitList from '$lib/components/CommitList.svelte';
 	import FilterControls from '$lib/components/FilterControls.svelte';
 	import BranchTreeView from '$lib/components/BranchTreeView.svelte';
@@ -31,12 +33,11 @@
 	import DeleteConfirmDialog from '$lib/components/DeleteConfirmDialog.svelte';
 	import MergedBranchesDialog from '$lib/components/MergedBranchesDialog.svelte';
 	import CommitDetailDialog from '$lib/components/CommitDetailDialog.svelte';
-	import type { BranchWithMetadata, RecentCommit } from '$lib/server/git/types';
+	import type { BranchWithMetadata, RecentCommit, GitWorktree } from '$lib/server/git/types';
 	import { createKeyboardNav } from '$lib/keyboard/handler.svelte';
 	import { expandAncestors, setExpanded } from '$lib/tree/treeNav.svelte';
 	import HelpOverlay from '$lib/keyboard/HelpOverlay.svelte';
 	import faviconUrl from '$lib/assets/favicon.svg';
-	import { invalidateAll } from '$app/navigation';
 	import { tick } from 'svelte';
 	import UploadIcon from '$lib/icons/UploadIcon.svelte';
 	import RefreshIcon from '$lib/icons/RefreshIcon.svelte';
@@ -51,7 +52,7 @@
 	}
 
 	// State
-	let viewMode = $state<'list' | 'tree'>('list');
+	let viewMode = $state<'list' | 'tree' | 'worktrees'>('list');
 	let filter = $state('all');
 	let searchTerm = $state('');
 	let sortBy = $state('recent');
@@ -111,6 +112,7 @@
 	let statsData = $derived(await getStats());
 	let recentCommits = $derived(await getRecentCommits());
 	let pruneInfo = $derived(await getStaleBranches());
+	let worktrees = $derived(await getWorktrees());
 	let isPruning = $state(false);
 	let branchCommits = $derived(showHistoryFor ? await getBranchCommits(showHistoryFor) : []);
 	let branchTree = $derived.by(() => {
@@ -169,7 +171,14 @@
 	async function reload() {
 		isLoading = true;
 		const minDelay = new Promise((r) => setTimeout(r, 400));
-		await Promise.all([invalidateAll(), minDelay]);
+		await Promise.all([
+			getBranches().refresh(),
+			getStarredBranches().refresh(),
+			getStats().refresh(),
+			getRecentCommits().refresh(),
+			getStaleBranches().refresh(),
+			minDelay
+		]);
 		isLoading = false;
 	}
 
@@ -376,9 +385,13 @@
 			showHistoryFor = null;
 		},
 		getTreeRoots: () => branchTree?.roots ?? null,
+		getWorktreeList: () => (worktrees as GitWorktree[]) ?? [],
 		setViewMode: (mode) => {
 			viewMode = mode;
 			showHistoryFor = null;
+			if (mode !== 'worktrees') {
+				nav.selectedWorktreePath = null;
+			}
 			if (mode === 'tree' && nav.selectedBranch) {
 				const tree = buildTree(branchListPlain as BranchWithMetadata[]);
 				expandAncestors(tree.roots, nav.selectedBranch);
@@ -442,7 +455,7 @@
 					<code class="branch-commits-name">{statsData.currentBranch || 'None'}</code>
 				</div>
 				<CommitList
-					commits={recentCommits}
+					commits={recentCommits ?? []}
 					initialVisible={3}
 					onCommitClick={(hash, message) => {
 						selectedCommitHash = hash;
@@ -499,6 +512,9 @@
 			{viewMode}
 			onBranchCreated={handleBranchCreated}
 			onViewModeChange={(mode) => {
+				if (mode !== 'worktrees') {
+					nav.selectedWorktreePath = null;
+				}
 				if (mode === 'tree' && nav.selectedBranch) {
 					const tree = buildTree(branchListPlain as BranchWithMetadata[]);
 					expandAncestors(tree.roots, nav.selectedBranch);
@@ -522,7 +538,7 @@
 				<RefreshIcon class="loading-spinner" width={32} height={32} />
 				<h3>Loading branches...</h3>
 			</div>
-		{:else if (branchListPlain as BranchWithMetadata[]).length === 0}
+		{:else if viewMode !== 'worktrees' && (branchListPlain as BranchWithMetadata[]).length === 0}
 			<div class="empty-state">
 				<div class="empty-icon">
 					<GitBranchIcon width={48} height={48} />
@@ -559,7 +575,7 @@
 						onRenameComplete={() => (renamingBranchName = null)}
 						onError={showErrorDialog}
 						showCommitHistory={showHistoryFor === branch.name}
-						commitHistory={showHistoryFor === branch.name ? branchCommits : []}
+						commitHistory={showHistoryFor === branch.name ? (branchCommits ?? []) : []}
 						commitHistoryLoading={false}
 						onToggleHistory={() => {
 							showHistoryFor = showHistoryFor === branch.name ? null : branch.name;
@@ -572,11 +588,26 @@
 					/>
 				{/each}
 			</div>
+		{:else if viewMode === 'worktrees'}
+			<div class="worktrees-list">
+				{#each worktrees as GitWorktree[] as wt (wt.path)}
+					<WorktreeCard
+						worktree={wt}
+						selected={nav.selectedWorktreePath === wt.path}
+						onSelect={(path) => (nav.selectedWorktreePath = path)}
+					/>
+				{/each}
+				{#if (worktrees as GitWorktree[]).length === 0}
+					<div class="empty-state">
+						<p>No worktrees found</p>
+					</div>
+				{/if}
+			</div>
 		{:else if branchTree}
 			<BranchTreeView
 				roots={branchTree.roots}
 				{showHistoryFor}
-				{branchCommits}
+				branchCommits={branchCommits ?? []}
 				onToggleHistory={(path) => {
 					showHistoryFor = showHistoryFor === path ? null : path;
 				}}
@@ -747,6 +778,10 @@
 	}
 
 	.branches-list {
+		padding: 16px;
+	}
+
+	.worktrees-list {
 		padding: 16px;
 	}
 

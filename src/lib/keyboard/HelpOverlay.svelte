@@ -76,6 +76,15 @@
 				<dd>Expand directory (on dir node)</dd>
 			</dl>
 		</div>
+		<div class="help-section">
+			<h3>Views</h3>
+			<dl>
+				<dt><kbd>g w</kbd></dt>
+				<dd>Go to worktrees view</dd>
+				<dt><kbd>g b</kbd></dt>
+				<dd>Go back to branches</dd>
+			</dl>
+		</div>
 	</div>
 	<p class="help-hint">Press <kbd>?</kbd> or <kbd>Esc</kbd> to close</p>
 </Dialog>

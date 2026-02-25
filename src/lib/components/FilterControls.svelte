@@ -19,6 +19,7 @@
 	import PlusIcon from '$lib/icons/PlusIcon.svelte';
 	import ListIcon from '$lib/icons/ListIcon.svelte';
 	import TreeIcon from '$lib/icons/TreeIcon.svelte';
+	import WorktreeIcon from '$lib/icons/WorktreeIcon.svelte';
 
 	// Props
 	let {
@@ -34,7 +35,7 @@
 		createStartPoint = $bindable<string | null>(null),
 		totalBranches = 0,
 		starredCount = 0,
-		viewMode = 'list' as 'list' | 'tree',
+		viewMode = 'list' as 'list' | 'tree' | 'worktrees',
 		onViewModeChange,
 		onBranchCreated
 	}: {
@@ -50,8 +51,8 @@
 		createStartPoint?: string | null;
 		totalBranches?: number;
 		starredCount?: number;
-		viewMode?: 'list' | 'tree';
-		onViewModeChange?: (mode: 'list' | 'tree') => void;
+		viewMode?: 'list' | 'tree' | 'worktrees';
+		onViewModeChange?: (mode: 'list' | 'tree' | 'worktrees') => void;
 		onBranchCreated?: (name: string) => void;
 	} = $props();
 
@@ -296,6 +297,14 @@
 				title="Tree view"
 			>
 				<TreeIcon />
+			</button>
+			<button
+				class="filter-btn"
+				class:active={viewMode === 'worktrees'}
+				onclick={() => onViewModeChange?.('worktrees')}
+				title="Worktrees view"
+			>
+				<WorktreeIcon />
 			</button>
 		</div>
 	</div>
