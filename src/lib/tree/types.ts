@@ -15,6 +15,7 @@ export interface DirectoryNode {
 	children: TreeNode[]; // dirs first, then leaves
 	branchCount: number;
 	hasCurrentBranch: boolean;
+	hasSkippedBranch: boolean; // any current, worktree-locked, or starred branch
 	availableActions: DirectoryAction[];
 }
 

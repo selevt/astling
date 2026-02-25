@@ -1,11 +1,15 @@
 import type { BranchWithMetadata } from '$lib/server/git/types';
 import type { BranchLeafNode, BranchTree, DirectoryNode, TreeNode } from './types';
+import { isBranchDeletable } from '$lib/utils/branch';
 
-export function collectBranchNames(node: DirectoryNode): string[] {
+export function collectBranchNames(
+	node: DirectoryNode,
+	{ excludeNonDeletable = false } = {}
+): string[] {
 	const names: string[] = [];
 	function walk(n: TreeNode) {
 		if (n.kind === 'branch') {
-			if (!n.branch.current) names.push(n.path);
+			if (!excludeNonDeletable || isBranchDeletable(n.branch)) names.push(n.path);
 		} else {
 			for (const child of n.children) walk(child);
 		}
@@ -34,6 +38,7 @@ export function buildTree(branches: BranchWithMetadata[]): BranchTree {
 			children: [],
 			branchCount: 0,
 			hasCurrentBranch: false,
+			hasSkippedBranch: false,
 			availableActions: ['delete-all']
 		};
 		dirMap.set(dirPath, node);
@@ -75,21 +80,29 @@ export function buildTree(branches: BranchWithMetadata[]): BranchTree {
 		}
 	}
 
-	// Bottom-up: compute branchCount and hasCurrentBranch recursively
-	function computeStats(node: TreeNode): { count: number; hasCurrent: boolean } {
+	// Bottom-up: compute branchCount, hasCurrentBranch, and hasSkippedBranch recursively
+	function computeStats(node: TreeNode): {
+		count: number;
+		hasCurrent: boolean;
+		hasSkipped: boolean;
+	} {
 		if (node.kind === 'branch') {
-			return { count: 1, hasCurrent: node.branch.current };
+			const skipped = !isBranchDeletable(node.branch);
+			return { count: 1, hasCurrent: node.branch.current, hasSkipped: skipped };
 		}
 		let count = 0;
 		let hasCurrent = false;
+		let hasSkipped = false;
 		for (const child of node.children) {
 			const s = computeStats(child);
 			count += s.count;
 			hasCurrent = hasCurrent || s.hasCurrent;
+			hasSkipped = hasSkipped || s.hasSkipped;
 		}
 		node.branchCount = count;
 		node.hasCurrentBranch = hasCurrent;
-		return { count, hasCurrent };
+		node.hasSkippedBranch = hasSkipped;
+		return { count, hasCurrent, hasSkipped };
 	}
 
 	// Sort children: dirs alphabetically first, then leaves (preserving input order)

@@ -28,6 +28,7 @@
 	import BranchTreeView from '$lib/components/BranchTreeView.svelte';
 	import DeleteDirectoryDialog from '$lib/components/DeleteDirectoryDialog.svelte';
 	import { buildTree, collectBranchNames } from '$lib/tree/buildTree';
+	import { isBranchDeletable } from '$lib/utils/branch';
 	import type { DirectoryNode } from '$lib/tree/types';
 	import ErrorDialog from '$lib/components/ErrorDialog.svelte';
 	import DeleteConfirmDialog from '$lib/components/DeleteConfirmDialog.svelte';
@@ -224,8 +225,8 @@
 
 	function handleDeleteDirectory(node: DirectoryNode) {
 		deleteDirPath = node.path;
-		deleteDirBranches = collectBranchNames(node);
-		deleteDirSkippedCurrent = node.hasCurrentBranch;
+		deleteDirBranches = collectBranchNames(node, { excludeNonDeletable: true });
+		deleteDirSkippedCurrent = node.hasSkippedBranch;
 		showDeleteDirDialog = true;
 	}
 
@@ -346,7 +347,7 @@
 		},
 		toggleStarSelected: (b) => handleToggleStar(b.name),
 		deleteSelected: (b, force) => {
-			if (!b.current) {
+			if (isBranchDeletable(b)) {
 				if (force) {
 					deleteBranchName = b.name;
 					performDelete(true);
@@ -673,7 +674,7 @@
 		bind:open={showDeleteDirDialog}
 		dirPath={deleteDirPath}
 		branches={deleteDirBranches}
-		skippedCurrent={deleteDirSkippedCurrent}
+		hasSkipped={deleteDirSkippedCurrent}
 		onConfirm={performDeleteDirectory}
 		onCancel={() => (showDeleteDirDialog = false)}
 	/>

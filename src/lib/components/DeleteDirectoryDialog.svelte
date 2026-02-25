@@ -5,14 +5,14 @@
 		open = $bindable(false),
 		dirPath,
 		branches,
-		skippedCurrent,
+		hasSkipped,
 		onConfirm,
 		onCancel
 	}: {
 		open?: boolean;
 		dirPath: string;
 		branches: string[];
-		skippedCurrent: boolean;
+		hasSkipped: boolean;
 		onConfirm: () => void;
 		onCancel: () => void;
 	} = $props();
@@ -52,8 +52,8 @@
 		{/if}
 	</ul>
 
-	{#if skippedCurrent}
-		<p class="skipped-current-note">The current branch will not be deleted.</p>
+	{#if hasSkipped}
+		<p class="skipped-current-note">Current, starred, and worktree branches will be skipped.</p>
 	{/if}
 
 	<div class="delete-actions">

@@ -12,6 +12,7 @@
 	import type { BranchWithMetadata, RecentCommit } from '$lib/server/git/types';
 	import { formatAbsoluteDate } from '$lib/utils/dates';
 	import StarIcon from '$lib/icons/StarIcon.svelte';
+	import { isBranchDeletable } from '$lib/utils/branch';
 	import EditIcon from '$lib/icons/EditIcon.svelte';
 	import DownloadIcon from '$lib/icons/DownloadIcon.svelte';
 	import TrashIcon from '$lib/icons/TrashIcon.svelte';
@@ -279,8 +280,14 @@
 			<button
 				class="delete-btn"
 				onclick={handleDelete}
-				disabled={branch.current}
-				title={branch.current ? 'Cannot delete current branch' : 'Delete branch'}
+				disabled={!isBranchDeletable(branch)}
+				title={branch.current
+					? 'Cannot delete current branch'
+					: branch.lockedByWorktree
+						? `Cannot delete: checked out in worktree ${branch.lockedByWorktree}`
+						: branch.starred
+							? 'Cannot delete starred branch'
+							: 'Delete branch'}
 			>
 				<TrashIcon />
 			</button>

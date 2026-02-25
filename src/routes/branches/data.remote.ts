@@ -4,6 +4,7 @@ import { gitService } from '$lib/server/git/commands';
 import { metadataService } from '$lib/server/storage/metadata';
 import type { BranchWithMetadata } from '$lib/server/git/types';
 import { createBranchSchema } from '$lib/schemas/branch';
+import { isBranchDeletable } from '$lib/utils/branch';
 
 export type CommandResult = { success: true; branch?: string } | { success: false; error: string };
 
@@ -433,7 +434,10 @@ export const getCommitDiff = command(
 export const findMergedBranches = query(async () => {
 	try {
 		const target = gitService.getTargetBranch();
-		return await gitService.findMergedBranches(target);
+		const merged = await gitService.findMergedBranches(target);
+		const branches = await getBranches();
+		const nonDeletable = new Set(branches.filter((b) => !isBranchDeletable(b)).map((b) => b.name));
+		return merged.filter((name) => !nonDeletable.has(name));
 	} catch (error) {
 		console.error('Failed to find merged branches:', error);
 		throw new Error(
@@ -486,7 +490,15 @@ export const deleteBranches = command(
 		const deleted: string[] = [];
 		const failed: Array<{ branch: string; error: string }> = [];
 
+		const allBranches = await getBranches();
+		const branchMeta = new Map(allBranches.map((b) => [b.name, b]));
+
 		for (const branch of branches) {
+			const meta = branchMeta.get(branch);
+			if (meta && !isBranchDeletable(meta)) {
+				failed.push({ branch, error: 'Branch is protected and cannot be deleted' });
+				continue;
+			}
 			try {
 				await gitService.deleteBranch(branch, { force: true });
 				await metadataService.delete(branch);
