@@ -61,7 +61,8 @@
 	let isCreating = $state(false);
 	let isFetching = $state(false);
 
-	let repoPathInfo: { path: string; valid: boolean } | null = $state(null);
+	let repoPathInfo: { path: string; valid: boolean; worktreeOf: string | null } | null =
+		$state(null);
 	let newRepoPath = $state('');
 
 	let targetBranch = $state('main');
@@ -87,11 +88,11 @@
 	async function refreshRepoInfo() {
 		try {
 			const data = await getRepoPath();
-			repoPathInfo = { path: data.path, valid: data.valid };
+			repoPathInfo = { path: data.path, valid: data.valid, worktreeOf: data.worktreeOf ?? null };
 			newRepoPath = repoPathInfo.path ?? '';
 		} catch (err) {
 			console.error('refreshRepoInfo error', err);
-			repoPathInfo = { path: '', valid: false };
+			repoPathInfo = { path: '', valid: false, worktreeOf: null };
 			newRepoPath = '';
 		}
 	}
@@ -202,6 +203,9 @@
 					<span class="config-item">
 						<small>Repo:</small>
 						<code class="repo-path">{repoPathInfo.path}</code>
+						{#if repoPathInfo.worktreeOf}
+							<span class="repo-worktree">(worktree of {repoPathInfo.worktreeOf})</span>
+						{/if}
 						{#if !repoPathInfo.valid}
 							<span class="repo-invalid">(not a git repo)</span>
 						{/if}
@@ -659,6 +663,11 @@
 		color: var(--color-error-text);
 		font-size: 12px;
 		font-weight: 500;
+	}
+
+	.repo-worktree {
+		color: var(--color-text-muted);
+		font-size: 12px;
 	}
 
 	.repo-actions {

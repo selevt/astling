@@ -34,6 +34,33 @@ export class GitService {
 		}
 	}
 
+	// Returns the common git directory for a repo or worktree path.
+	// For a regular repo this is <path>/.git; for a worktree it resolves to the
+	// main repo's .git directory so metadata is shared across all worktrees.
+	async getGitCommonDir(path: string): Promise<string> {
+		try {
+			const { stdout } = await execFileAsync('git', ['-C', path, 'rev-parse', '--git-common-dir']);
+			const rel = stdout.trim();
+			// The output may be relative (e.g. ".git") or absolute
+			return rel.startsWith('/') ? rel : join(path, rel);
+		} catch {
+			// Fallback: assume standard layout
+			return join(path, '.git');
+		}
+	}
+
+	// Returns the main repo path if `path` is a worktree, or null if it's a regular repo.
+	async getWorktreeMainRepo(path: string): Promise<string | null> {
+		const commonDir = await this.getGitCommonDir(path);
+		const expected = join(path, '.git');
+		// If the common dir differs from <path>/.git, this is a worktree
+		if (commonDir !== expected) {
+			// commonDir is the main repo's .git dir; parent is the main repo root
+			return join(commonDir, '..');
+		}
+		return null;
+	}
+
 	private async isGitRepo(): Promise<boolean> {
 		try {
 			await access(join(this.repoPath, '.git'), constants.F_OK);

@@ -22,6 +22,11 @@ export class MetadataService {
 		this.metadataPath = join(repoPath, '.git', 'branches.json');
 	}
 
+	setGitDir(gitDir: string) {
+		this.metadataPath = join(gitDir, 'branches.json');
+		this.cache = null;
+	}
+
 	private async ensureMetadataFile(): Promise<void> {
 		try {
 			await access(this.metadataPath, constants.F_OK);

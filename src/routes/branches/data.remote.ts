@@ -13,7 +13,8 @@ export const getRepoPath = query(async () => {
 	try {
 		const path = gitService.getRepoPath();
 		const valid = await gitService.validateRepoPath(path);
-		return { path, valid };
+		const worktreeOf = valid ? await gitService.getWorktreeMainRepo(path) : null;
+		return { path, valid, worktreeOf };
 	} catch (err) {
 		console.error('Failed to get repo path:', err);
 		throw new Error('Failed to get repo path');
@@ -29,9 +30,11 @@ export const setRepoPath = command(
 				throw new Error('Path is not a git repository');
 			}
 
-			// Update both services
+			// Update both services. Resolve the common git dir first so that worktree
+			// paths (where .git is a file, not a directory) work correctly.
+			const gitCommonDir = await gitService.getGitCommonDir(path);
 			gitService.setRepoPath(path);
-			metadataService.setRepoPath(path);
+			metadataService.setGitDir(gitCommonDir);
 
 			// Ensure metadata exists and sync branches
 			const rawBranches = await gitService.getAllBranches();
