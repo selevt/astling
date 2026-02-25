@@ -43,6 +43,7 @@ export const setRepoPath = command(
 			// Refresh dependent queries
 			await getBranches().refresh();
 			await getStats().refresh();
+			await getRepoPath().refresh();
 
 			return { success: true, path };
 		} catch (error) {
@@ -61,6 +62,7 @@ export const setTargetBranch = command(
 	v.pipe(v.string(), v.nonEmpty('Target branch is required')),
 	async (branch) => {
 		gitService.setTargetBranch(branch.trim());
+		await getTargetBranch().refresh();
 		return { success: true, branch: gitService.getTargetBranch() };
 	}
 );

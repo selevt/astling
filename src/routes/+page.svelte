@@ -15,7 +15,6 @@
 		dismissPruneSuggestion,
 		backupBranch,
 		restorePatch,
-		getTargetBranch,
 		getBranchCommits,
 		deleteBranches,
 		fetchRemote,
@@ -505,7 +504,6 @@
 			onSearchChange={handleSearchChange}
 			onSortChange={handleSortChange}
 			onFindMerged={() => (showMergedDialog = true)}
-			{getTargetBranch}
 			bind:showCreateForm
 			bind:createStartPoint
 			totalBranches={statsData?.totalGitBranches ?? 0}

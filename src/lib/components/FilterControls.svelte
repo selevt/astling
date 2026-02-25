@@ -2,6 +2,7 @@
 	import {
 		getRepoPath,
 		setRepoPath,
+		getTargetBranch,
 		setTargetBranch,
 		createBranch,
 		fetchRemote,
@@ -29,7 +30,6 @@
 		onFilterChange,
 		onSearchChange,
 		onSortChange,
-		getTargetBranch,
 		onFindMerged,
 		showCreateForm = $bindable(false),
 		createStartPoint = $bindable<string | null>(null),
@@ -45,7 +45,6 @@
 		onFilterChange: (filter: string) => void;
 		onSearchChange: (term: string) => void;
 		onSortChange: (sort: string) => void;
-		getTargetBranch: () => Promise<string>;
 		onFindMerged?: () => void;
 		showCreateForm?: boolean;
 		createStartPoint?: string | null;
@@ -57,15 +56,13 @@
 	} = $props();
 
 	let newBranchName = $state('');
-	let newBranchStart = $state('HEAD');
 	let isCreating = $state(false);
 	let isFetching = $state(false);
 
-	let repoPathInfo: { path: string; valid: boolean; worktreeOf: string | null } | null =
-		$state(null);
+	let repoPathInfo = $derived(await getRepoPath());
 	let newRepoPath = $state('');
 
-	let targetBranch = $state('main');
+	let targetBranch = $derived(await getTargetBranch());
 	let newTargetBranch = $state('');
 
 	let editingConfig = $state(false);
@@ -85,29 +82,7 @@
 		}
 	});
 
-	async function refreshRepoInfo() {
-		try {
-			const data = await getRepoPath();
-			repoPathInfo = { path: data.path, valid: data.valid, worktreeOf: data.worktreeOf ?? null };
-			newRepoPath = repoPathInfo.path ?? '';
-		} catch (err) {
-			console.error('refreshRepoInfo error', err);
-			repoPathInfo = { path: '', valid: false, worktreeOf: null };
-			newRepoPath = '';
-		}
-	}
-
-	// Load initial repo info on mount
 	onMount(async () => {
-		refreshRepoInfo();
-		try {
-			const tb = await getTargetBranch();
-			targetBranch = tb;
-			newTargetBranch = tb;
-			newBranchStart = tb;
-		} catch (err) {
-			console.error('Failed to fetch target branch:', err);
-		}
 		await checkAutoFetch();
 		pollTimer = setInterval(async () => {
 			now = Date.now();
@@ -132,14 +107,9 @@
 
 		try {
 			await setTargetBranch(newTargetBranch.trim());
-			targetBranch = newTargetBranch.trim();
 		} catch (err) {
 			alert(`Failed to set target branch: ${err instanceof Error ? err.message : String(err)}`);
 			branchOk = false;
-		}
-
-		if (repoOk) {
-			await refreshRepoInfo();
 		}
 
 		if (fetchMeta && newAutoFetchInterval !== fetchMeta.intervalSecs) {
@@ -233,6 +203,8 @@
 				<button
 					class="edit-repo-btn"
 					onclick={() => {
+						newRepoPath = repoPathInfo?.path ?? '';
+						newTargetBranch = targetBranch;
 						newAutoFetchInterval = fetchMeta?.intervalSecs ?? 0;
 						editingConfig = true;
 					}}>Change</button
