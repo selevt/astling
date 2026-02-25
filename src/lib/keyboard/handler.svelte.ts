@@ -478,6 +478,9 @@ export function createKeyboardNav(
 		},
 		set selectedBranch(v: string | null) {
 			selectedBranch = v;
+			if (actions.getViewMode() === 'tree') {
+				setFocusedTreePath(v);
+			}
 		},
 		get selectedWorktreePath() {
 			return selectedWorktreePath;
